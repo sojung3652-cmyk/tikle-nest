@@ -303,8 +303,13 @@
   #brand-logo:hover .wordmark{color:var(--accent);}
 
   /* ── full settings modal ── */
-  .set-sec{margin-bottom:24px;}
-  .set-sec-head{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);padding-bottom:9px;border-bottom:1px solid var(--mist);margin-bottom:14px;}
+  .set-acc{border:1px solid var(--mist);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;background:var(--card);}
+  .set-acc-hd{display:flex;align-items:center;gap:8px;padding:14px 16px;cursor:pointer;user-select:none;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
+  .set-acc-hd:hover{color:var(--ink);}
+  .set-acc-hd .chev{transition:transform .2s;color:var(--ink-faint);font-size:14px;font-weight:600;}
+  .set-acc-hd.open .chev{transform:rotate(90deg);}
+  .set-acc-body{display:none;padding:0 16px 16px;}
+  .set-acc-body.open{display:block;}
   .set-invite{margin-top:12px;padding:12px 13px;background:var(--nec-soft);border-radius:var(--radius-sm);border:1px solid var(--mist);}
   .set-invite-label{font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
   .set-invite-code{flex:1;font-size:20px;font-weight:700;letter-spacing:.1em;color:var(--nec-text);}
@@ -678,7 +683,7 @@ const CAT_KO={"Rent / Housing":"주거/월세","Utilities":"공과금","Grocerie
 let lang=localStorage.getItem("tn-lang")||"en";
 function tr(key,...args){const v=(TRANSLATIONS[lang]||TRANSLATIONS.en)[key]??TRANSLATIONS.en[key]??key;return typeof v==="function"?v(...args):v;}
 function catLabel(name){return lang==="ko"&&CAT_KO[name]?CAT_KO[name]:name;}
-function setLang(l){lang=l;localStorage.setItem("tn-lang",l);document.cookie="tn-lang="+l+";path=/;max-age=31536000";document.documentElement.lang=l;applyI18n();render();openFullSettings();}
+function setLang(l){lang=l;localStorage.setItem("tn-lang",l);document.cookie="tn-lang="+l+";path=/;max-age=31536000";document.documentElement.lang=l;applyI18n();render();openFullSettings(3);}
 function applyI18n(){
   const set=(id,key)=>{const el=document.getElementById(id);if(el)el.textContent=tr(key);};
   const lbl=(sel,key)=>{const el=document.querySelector(sel);if(el)el.textContent=tr(key);};
@@ -1184,45 +1189,71 @@ async function analyzeFuel(recs){
   finally{btn.disabled=false;document.getElementById("fuel-analyze-lbl").textContent=tr("get_fuel_advice");}
 }
 
-async function openFullSettings(){
+async function openFullSettings(openSection){
   const accRows=meta.accounts.map(a=>`<div class="arow"><input type="text" value="${esc(a.name)}" data-id="${a.id}"/>${meta.accounts.length>1?`<button data-del="${a.id}">${tr("del")}</button>`:""}</div>`).join("");
   let inviteCode="";
   try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
   const user=window.__TN_USER__||{};
   const curCur=meta.currency||"USD";
   openModal(
-    `<h3 style="margin:0 0 22px">${tr("settings")}</h3>`+
+    `<h3 style="margin:0 0 16px">${tr("settings")}</h3>`+
 
-    `<div class="set-sec">`+
-    `<div class="set-sec-head">${tr("manage_accounts")}</div>`+
-    `<div class="field"><label for="s-name">${tr("household_name_label")}</label><div style="display:flex;gap:8px"><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/><button class="mini-btn" id="s-savehh" style="padding:0 14px">${tr("save")}</button></div></div>`+
-    `<div class="field"><label>${tr("accounts_label")}</label><div class="acct-manage" id="s-acct">${accRows}</div></div>`+
-    `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
-    `<button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center;margin-bottom:${inviteCode?10:0}px">${acct().lock?tr("manage_password",esc(acct().name)):tr("lock_account",esc(acct().name))}</button>`+
-    (inviteCode
-      ?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`
-      :"")+
+    // MANAGE ACCOUNTS
+    `<div class="set-acc" id="sacc-1">`+
+      `<div class="set-acc-hd" id="sacc-hd-1"><span class="chev">›</span>${tr("manage_accounts")}</div>`+
+      `<div class="set-acc-body" id="sacc-bd-1">`+
+        `<div class="field"><label for="s-name">${tr("household_name_label")}</label><div style="display:flex;gap:8px"><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/><button class="mini-btn" id="s-savehh" style="padding:0 14px">${tr("save")}</button></div></div>`+
+        `<div class="field"><label>${tr("accounts_label")}</label><div class="acct-manage" id="s-acct">${accRows}</div></div>`+
+        `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
+        `<button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center;margin-bottom:${inviteCode?10:0}px">${acct().lock?tr("manage_password",esc(acct().name)):tr("lock_account",esc(acct().name))}</button>`+
+        (inviteCode?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`:"")+
+      `</div>`+
     `</div>`+
 
-    `<div class="set-sec">`+
-    `<div class="set-sec-head">${tr("user_info")}</div>`+
-    `<div class="field"><label>${tr("display_name")}</label><div style="display:flex;gap:8px"><input type="text" id="s-dispname" value="${esc(user.name||"")}"/><button class="mini-btn" id="s-savename" style="padding:0 14px">${tr("save_name")}</button></div></div>`+
-    `<div class="field"><label>${tr("email_label")}</label><div style="font-size:14px;color:var(--ink-soft);padding:9px 0">${esc(user.email||"—")}</div></div>`+
-    `<button class="btn-secondary" id="s-chpw" style="width:100%;justify-content:center">${tr("change_password")}</button>`+
+    // USER INFORMATION
+    `<div class="set-acc" id="sacc-2">`+
+      `<div class="set-acc-hd" id="sacc-hd-2"><span class="chev">›</span>${tr("user_info")}</div>`+
+      `<div class="set-acc-body" id="sacc-bd-2">`+
+        `<div class="field"><label>${tr("display_name")}</label><div style="display:flex;gap:8px"><input type="text" id="s-dispname" value="${esc(user.name||"")}"/><button class="mini-btn" id="s-savename" style="padding:0 14px">${tr("save_name")}</button></div></div>`+
+        `<div class="field"><label>${tr("email_label")}</label><div style="font-size:14px;color:var(--ink-soft);padding:9px 0">${esc(user.email||"—")}</div></div>`+
+        `<button class="btn-secondary" id="s-chpw" style="width:100%;justify-content:center">${tr("change_password")}</button>`+
+      `</div>`+
     `</div>`+
 
-    `<div class="set-sec">`+
-    `<div class="set-sec-head">${tr("general")}</div>`+
-    `<div class="field"><label>${tr("color_theme")}</label><div id="s-theme-cards" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>`+
-    `<div class="field"><label>${tr("language")}</label><div style="display:flex;gap:8px;margin-top:6px"><button class="pill" id="s-lang-en" aria-pressed="${lang==="en"}">${tr("lang_en")}</button><button class="pill" id="s-lang-ko" aria-pressed="${lang==="ko"}">${tr("lang_ko")}</button></div></div>`+
-    `<div class="field" style="margin-bottom:0"><label>${tr("currency_label")}</label><button class="btn-secondary" id="s-cur" style="width:100%;justify-content:center;margin-top:4px">${tr("change_currency",esc(curCur))}</button></div>`+
+    // GENERAL
+    `<div class="set-acc" id="sacc-3">`+
+      `<div class="set-acc-hd" id="sacc-hd-3"><span class="chev">›</span>${tr("general")}</div>`+
+      `<div class="set-acc-body" id="sacc-bd-3">`+
+        `<div class="field"><label>${tr("color_theme")}</label><div id="s-theme-cards" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>`+
+        `<div class="field"><label>${tr("language")}</label><div style="display:flex;gap:8px;margin-top:6px"><button class="pill" id="s-lang-en" aria-pressed="${lang==="en"}">${tr("lang_en")}</button><button class="pill" id="s-lang-ko" aria-pressed="${lang==="ko"}">${tr("lang_ko")}</button></div></div>`+
+        `<div class="field" style="margin-bottom:0"><label>${tr("currency_label")}</label><button class="btn-secondary" id="s-cur" style="width:100%;justify-content:center;margin-top:4px">${tr("change_currency",esc(curCur))}</button></div>`+
+      `</div>`+
     `</div>`+
 
     `<button id="s-signout" class="set-signout">${tr("sign_out")}</button>`+
     `<div class="modal-actions" style="margin-top:14px"><button class="ghost" onclick="closeModal()">${tr("close")}</button></div>`
   );
 
-  renderThemeCards("s-theme-cards");
+  // Accordion toggle — only one section open at a time
+  const openAcc=n=>{
+    [1,2,3].forEach(x=>{
+      document.getElementById("sacc-hd-"+x).classList.remove("open");
+      document.getElementById("sacc-bd-"+x).classList.remove("open");
+    });
+    document.getElementById("sacc-hd-"+n).classList.add("open");
+    document.getElementById("sacc-bd-"+n).classList.add("open");
+    if(n===3)renderThemeCards("s-theme-cards");
+  };
+  [1,2,3].forEach(n=>{
+    document.getElementById("sacc-hd-"+n).onclick=()=>{
+      const isOpen=document.getElementById("sacc-hd-"+n).classList.contains("open");
+      if(isOpen){
+        document.getElementById("sacc-hd-"+n).classList.remove("open");
+        document.getElementById("sacc-bd-"+n).classList.remove("open");
+      }else{openAcc(n);}
+    };
+  });
+  if(openSection)openAcc(openSection);
 
   const nm=document.getElementById("s-name");
   nm.addEventListener("input",()=>{meta.name=nm.value;document.getElementById("acct-sub").textContent=(nm.value.trim()?nm.value.trim()+" · ":"")+tr("viewing",acct().name);});
@@ -1230,7 +1261,7 @@ async function openFullSettings(){
   document.querySelectorAll("#s-acct input").forEach(inp=>inp.onchange=()=>{const a=meta.accounts.find(x=>x.id===inp.dataset.id);if(a){a.name=inp.value.trim()||a.name;saveMeta();render();}});
   document.querySelectorAll("#s-acct button[data-del]").forEach(b=>b.onclick=()=>deleteAccount(b.dataset.del));
   document.getElementById("s-lock").onclick=openLockForm;
-  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openFullSettings();};
+  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);};
   if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};};
 
   document.getElementById("s-lang-en").onclick=()=>setLang("en");
@@ -1561,13 +1592,13 @@ function openLockForm(){
     <p>${lockDesc}</p>
     <div class="field"><label for="lk-new">${lockPwLbl}</label><input type="password" id="lk-new" inputmode="numeric" placeholder="${lockPh}" autocomplete="off"/></div>
     <div class="modal-actions">${locked?`<button class="ghost" id="lk-remove">${lang==="ko"?"잠금 해제":"Remove lock"}</button>`:`<button class="ghost" id="lk-back">${tr("back")}</button>`}<button class="primary" id="lk-save">${tr("save")}</button></div>`);
-  if(locked)document.getElementById("lk-remove").onclick=async()=>{delete a.lock;unlocked.add(a.id);await saveMeta();render();openFullSettings();toast(tr("lock_removed"));};
-  else document.getElementById("lk-back").onclick=()=>openFullSettings();
+  if(locked)document.getElementById("lk-remove").onclick=async()=>{delete a.lock;unlocked.add(a.id);await saveMeta();render();openFullSettings(1);toast(tr("lock_removed"));};
+  else document.getElementById("lk-back").onclick=()=>openFullSettings(1);
   document.getElementById("lk-save").onclick=async()=>{
     const v=document.getElementById("lk-new").value.trim();
     if(!locked&&!v){toast(lang==="ko"?"비밀번호를 입력하세요":"Enter a password");return;}
     if(v){a.lock=hashCode(v);unlocked.add(a.id);}
-    await saveMeta();render();openFullSettings();toast(tr("save"));
+    await saveMeta();render();openFullSettings(1);toast(tr("save"));
   };
 }
 async function analyze(){
