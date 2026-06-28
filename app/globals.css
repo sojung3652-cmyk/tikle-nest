@@ -1,0 +1,62 @@
+:root {
+  --paper: #FAF7F7;
+  --card: #FFFFFF;
+  --ink: #3D3436;
+  --ink-soft: #7A6E70;
+  --ink-faint: #A89DA0;
+  --mist: #E2DCDD;
+  --mist-2: #EEEBEB;
+  --nec: #8E7E80;
+  --nec-soft: #E8E0E2;
+  --nec-text: #5C4E50;
+  --save: #D08080;
+  --save-soft: #F5E0E0;
+  --save-text: #984848;
+  --accent: #C87878;
+  --accent-soft: #F2DEDE;
+  --accent-text: #8C4444;
+  --over: #D94452;
+  --over-soft: #FCE4E4;
+  --over-text: #A5303C;
+  --positive: #6B9E8A;
+  --btn-hover: #C06E6E;
+  --shadow: 0 1px 2px rgba(28, 32, 48, 0.04), 0 10px 26px -16px rgba(28, 32, 48, 0.20);
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

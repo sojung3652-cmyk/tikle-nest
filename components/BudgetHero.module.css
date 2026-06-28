@@ -1,0 +1,122 @@
+.hero {
+  background: var(--card);
+  border: 1px solid var(--mist);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.heroTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.heroAmount {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.heroActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chipBtn {
+  border: 1px solid var(--mist);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.chipBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+/* --- spending bar --- */
+
+.bar {
+  display: flex;
+  height: 24px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--mist-2);
+  margin-top: 16px;
+}
+
+.barSeg {
+  display: block;
+  height: 100%;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.1, 1);
+}
+
+.segNec { background: var(--nec); }
+.segOpt { background: var(--save); }
+.segOver { background: var(--over); }
+
+/* --- legend --- */
+
+.legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 13px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.dotNec  { background: var(--nec); }
+.dotOpt  { background: var(--save); }
+.dotLeft { background: var(--mist-2); border: 1px solid var(--mist); }
+.dotOver { background: var(--over); }
+
+.legendVal {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- goal status line --- */
+
+.goalStatus {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--mist);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
