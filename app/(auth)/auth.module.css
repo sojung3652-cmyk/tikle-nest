@@ -114,6 +114,30 @@
   margin-bottom: 14px;
 }
 
+.rememberRow {
+  display: flex;
+  align-items: center;
+  margin: 10px 0 4px;
+}
+
+.rememberLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .passwordWrap {
   position: relative;
 }

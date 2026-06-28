@@ -49,6 +49,12 @@ export default async function SignInPage({
             <label className={styles.label} htmlFor="password">Password</label>
             <PasswordInput id="password" name="password" autoComplete="current-password" />
           </div>
+          <div className={styles.rememberRow}>
+            <label className={styles.rememberLabel}>
+              <input type="checkbox" name="remember" className={styles.checkbox} />
+              Remember me
+            </label>
+          </div>
           <button className={styles.submit} type="submit">Sign in</button>
         </form>
 

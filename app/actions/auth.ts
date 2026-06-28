@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
@@ -27,9 +29,31 @@ export async function signUp(formData: FormData) {
 }
 
 export async function signIn(formData: FormData) {
-  const supabase = await createClient();
   const email = (formData.get("email") as string).trim();
   const password = formData.get("password") as string;
+  const remember = formData.get("remember") === "on";
+
+  const cookieStore = await cookies();
+
+  // When "remember me" is off, strip maxAge so cookies become session-only
+  // (deleted when the browser closes). When on, keep Supabase's default maxAge.
+  const supabase = createServerClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const opts = remember ? options : { ...options, maxAge: undefined };
+              cookieStore.set(name, value, opts);
+            });
+          } catch {}
+        },
+      },
+    }
+  );
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
