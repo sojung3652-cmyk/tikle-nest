@@ -9,7 +9,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { content } = await req.json();
+  const { content, messages, system, maxTokens } = await req.json();
+
+  const body: Record<string, unknown> = {
+    model: "claude-sonnet-4-6",
+    max_tokens: maxTokens || 1024,
+    messages: messages ?? [{ role: "user", content }],
+  };
+  if (system) body.system = system;
 
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -18,11 +25,7 @@ export async function POST(req: NextRequest) {
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
     },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      messages: [{ role: "user", content }],
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!upstream.ok) {

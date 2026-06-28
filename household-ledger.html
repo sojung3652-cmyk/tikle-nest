@@ -320,6 +320,43 @@
   .set-signout:hover{background:var(--over);color:#fff;border-color:var(--over);}
   .aso-welcome{font-size:22px;font-weight:600;color:var(--ink);margin:0 0 4px;text-align:center;}
   .aso-sub{font-size:14px;color:var(--ink-soft);margin:0 0 24px;text-align:center;}
+
+  /* ── budget buddy ── */
+  .bb-section{background:var(--card);border:1px solid var(--mist);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;}
+  .bb-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 14px;cursor:pointer;user-select:none;gap:12px;}
+  .bb-head-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .bb-head h2{margin:0;font-size:16px;font-weight:600;white-space:nowrap;}
+  .bb-head .chev{transition:transform .2s;color:var(--ink-soft);font-weight:600;font-size:16px;flex-shrink:0;}
+  .bb-head .chev.open{transform:rotate(90deg);}
+  .bb-subtitle{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .bb-body{padding:0 22px 22px;border-top:1px solid var(--mist);}
+  .bb-report-btn{border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent-text);font-weight:500;font-size:13px;padding:7px 14px;border-radius:999px;cursor:pointer;transition:.15s;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;}
+  .bb-report-btn:hover{background:var(--accent);color:#fff;}
+  .bb-report-btn:disabled{opacity:.6;cursor:default;}
+  .bb-insights{display:flex;flex-direction:column;gap:10px;padding-top:18px;margin-bottom:4px;}
+  .bb-insight-card{display:flex;align-items:flex-start;gap:12px;background:var(--paper);border:1px solid var(--mist);border-radius:var(--radius-sm);padding:13px 15px;}
+  .bb-insight-emoji{font-size:22px;line-height:1;flex-shrink:0;margin-top:1px;}
+  .bb-insight-text{font-size:13.5px;line-height:1.5;color:var(--ink);}
+  .bb-ins-placeholder{font-size:13.5px;color:var(--ink-soft);padding-top:16px;}
+  .bb-chat{border-top:1px solid var(--mist-2);padding-top:16px;margin-top:18px;}
+  .bb-chat-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px;}
+  .bb-messages{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:340px;overflow-y:auto;}
+  .bb-msg{max-width:88%;font-size:14px;line-height:1.5;}
+  .bb-msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;}
+  .bb-msg.ai{align-self:flex-start;background:var(--paper);border:1px solid var(--mist);border-radius:4px 14px 14px 14px;padding:10px 14px;color:var(--ink);}
+  .bb-msg.ai b{font-weight:600;color:var(--ink);}
+  .bb-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+  .bb-chip{border:1px solid var(--mist);background:var(--paper);border-radius:999px;padding:6px 13px;font-size:13px;cursor:pointer;color:var(--ink-soft);transition:.15s;}
+  .bb-chip:hover{border-color:var(--nec);background:var(--nec-soft);color:var(--nec-text);}
+  .bb-input-row{display:flex;gap:8px;}
+  .bb-input-row input{flex:1;border:1px solid var(--mist);border-radius:var(--radius-sm);padding:10px 13px;font-family:inherit;font-size:14px;color:var(--ink);background:var(--paper);transition:border-color .15s,box-shadow .15s;}
+  .bb-input-row input:focus{outline:none;border-color:var(--nec);box-shadow:0 0 0 3px var(--nec-soft);}
+  .bb-send{border:none;background:var(--accent);color:#fff;border-radius:var(--radius-sm);width:44px;flex-shrink:0;font-size:18px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;}
+  .bb-send:hover{background:var(--btn-hover);}
+  .bb-send:disabled{opacity:.5;cursor:default;}
+  .bb-report-out{margin-top:0;padding:16px;background:var(--paper);border:1px solid var(--mist);border-radius:var(--radius-sm);font-size:14px;line-height:1.6;color:var(--ink);margin-bottom:16px;}
+  .bb-report-out p{margin:0 0 8px;}
+  .bb-report-out b{color:var(--ink);font-weight:600;}
 </style>
 </head>
 <body>
@@ -441,6 +478,31 @@
   <section class="analysis">
     <div class="analysis-head"><h2>Spending analysis</h2><button class="btn-analyze" id="analyze"><span id="analyze-label">Analyze this account</span></button></div>
     <div class="analysis-body" id="analysis-body"><span class="placeholder">Pick an account and tap analyze — I'll look at this month's spending patterns for just that account and suggest where you could save.</span></div>
+  </section>
+
+  <section class="bb-section" id="bb-section">
+    <div class="bb-head" id="bb-head">
+      <div class="bb-head-left">
+        <span class="chev" id="bb-chev">›</span>
+        <div>
+          <h2>💬 <span id="bb-title-text">Budget Buddy</span></h2>
+          <div class="bb-subtitle" id="bb-subtitle-text">Your AI financial advisor</div>
+        </div>
+      </div>
+      <button class="bb-report-btn" id="bb-report-btn">📊 <span id="bb-report-lbl">Monthly report</span></button>
+    </div>
+    <div class="bb-body" id="bb-body" style="display:none">
+      <div id="bb-insights" class="bb-insights"></div>
+      <div class="bb-chat" id="bb-chat">
+        <div class="bb-chat-label" id="bb-chat-label">Ask anything</div>
+        <div class="bb-messages" id="bb-messages"></div>
+        <div class="bb-chips" id="bb-chips"></div>
+        <div class="bb-input-row">
+          <input type="text" id="bb-input" placeholder="Ask about your finances…" />
+          <button class="bb-send" id="bb-send" aria-label="Send">↑</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="entries">
@@ -609,9 +671,9 @@ const TRANSLATIONS={
     car_tap_edit:"Tap edit to add details",
     car_add_details:"Add your car's details",
     enter_amount:"Enter an amount first",
-    img_read_err:"Couldn't read that image",
+    img_read_err:"Couldn’t read that image",
     receipt_not_found:"Receipt not found",
-    receipt_load_err:"Couldn't load receipt",
+    receipt_load_err:"Couldn’t load receipt",
     receipt:"Receipt",
     receipt_attached:"Receipt attached",
     receipt_saved_with:"Saved with this entry",
@@ -623,6 +685,20 @@ const TRANSLATIONS={
     account_name_ph2:"Joint account",
     create:"Create",
     account_added:"Account added",
+    bb_advisor:"Your AI financial advisor",
+    bb_monthly_report:"Monthly report",
+    bb_chat_label:"Ask anything",
+    bb_ask_ph:"Ask about your finances…",
+    bb_loading_insights:"Analyzing your spending…",
+    bb_no_entries:"Add some entries this month and I’ll give you personalized insights.",
+    bb_thinking:"Thinking…",
+    bb_report_loading:"Generating your monthly report…",
+    bb_report_err:"Couldn’t generate the report right now. Try again in a moment.",
+    bb_insights_err:"Couldn’t generate insights right now. Try again in a moment.",
+    bb_suggest_track:"Am I on track this month?",
+    bb_suggest_save:"Where can I save money?",
+    bb_suggest_plan:"Help me plan next month’s budget",
+    bb_suggest_compare:"How does this month compare to last?",
   },
   ko:{
     welcome:n=>`환영합니다, ${n}!`,choose_account:"계정을 선택하세요",
@@ -712,6 +788,20 @@ const TRANSLATIONS={
     account_name_ph2:"공동 계정",
     create:"만들기",
     account_added:"계정이 추가되었습니다",
+    bb_advisor:"AI 재정 어드바이저",
+    bb_monthly_report:"월간 보고서",
+    bb_chat_label:"무엇이든 물어보세요",
+    bb_ask_ph:"재정에 대해 질문해 보세요…",
+    bb_loading_insights:"지출을 분석 중입니다…",
+    bb_no_entries:"이번 달 항목을 추가하면 맞춤 분석을 드립니다.",
+    bb_thinking:"생각 중…",
+    bb_report_loading:"월간 보고서를 생성 중입니다…",
+    bb_report_err:"지금은 보고서를 생성할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    bb_insights_err:"지금은 분석할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    bb_suggest_track:"이번 달 잘 되고 있나요?",
+    bb_suggest_save:"어디서 절약할 수 있나요?",
+    bb_suggest_plan:"다음 달 예산을 세워주세요",
+    bb_suggest_compare:"지난달과 비교해 주세요",
   }
 };
 const CAT_KO={"Rent / Housing":"주거/월세","Utilities":"공과금","Groceries":"식료품","Public transit":"대중교통","Fuel / Gas":"연료/주유","Car payment / upkeep":"자동차","Taxi / Rideshare":"택시/라이드","Phone / Internet":"통신비","Health":"의료/건강","Insurance":"보험","Dining out":"외식","Shopping":"쇼핑","Entertainment":"여가/오락","Subscriptions":"구독","Gifts":"선물","Other":"기타"};
@@ -759,6 +849,7 @@ function applyI18n(){
   document.querySelectorAll("#show-nec [data-f='opt']").forEach(b=>b.textContent=tr("could_save"));
   document.querySelectorAll(".entry-panel .seg-label").forEach((el,i)=>el.textContent=i===0?tr("type"):tr("category_filter"));
   document.documentElement.lang=lang;
+  bbApplyI18n();
 }
 
 function renderThemeCards(containerId){
@@ -1644,7 +1735,10 @@ async function viewPhoto(id){
 }
 
 /* ---------- analysis ---------- */
-function resetAnalysis(){document.getElementById("analysis-body").innerHTML=`<span class="placeholder">${tr("analysis_tap",monthLabel(currentMonth))}</span>`;}
+function resetAnalysis(){
+  document.getElementById("analysis-body").innerHTML=`<span class="placeholder">${tr("analysis_tap",monthLabel(currentMonth))}</span>`;
+  bbResetSession();
+}
 
 function switchAccount(id){
   if(id===meta.currentAccountId)return;
@@ -1898,6 +1992,155 @@ function onboarding(){
   };
 }
 
+/* ---------- budget buddy ---------- */
+const BB_SYSTEM=`You are Budget Buddy, a friendly and warm financial advisor for a household. You have access to all their spending data. Be concise, specific with real numbers, encouraging but honest. Speak in the user's chosen language. Use their actual data — never make up numbers.`;
+
+let bbOpen=false;
+let bbInsightsLoaded=false;
+let bbChatHistory=[];
+let bbChatBusy=false;
+
+function bbResetSession(){
+  bbInsightsLoaded=false;
+  bbChatHistory=[];
+  bbChatBusy=false;
+  const ins=document.getElementById("bb-insights");if(ins)ins.innerHTML="";
+  const msgs=document.getElementById("bb-messages");if(msgs)msgs.innerHTML="";
+  const rpt=document.getElementById("bb-report-out");if(rpt)rpt.remove();
+}
+
+function buildBudgetContext(){
+  const ents=monthEntries();
+  const[cy,cm]=currentMonth.split("-").map(Number);
+  const lastM=monthKey(new Date(cy,cm-2,1));
+  const lastEnts=entries.filter(e=>e.accountId===meta.currentAccountId&&e.date.startsWith(lastM)&&e.type!=="income");
+  const budget=meta.budgets[bkey()]||0;
+  const incTotal=monthIncome().reduce((s,e)=>s+e.amount,0);
+  const goal=(meta.goals&&meta.goals[bkey()])||null;
+  const recurring=(meta.recurring||[]).filter(t=>t.accountId===meta.currentAccountId);
+  let nec=0,opt=0;ents.forEach(e=>{const s=split(e);nec+=s.nec;opt+=s.opt;});
+  const spent=nec+opt;
+  const today=new Date();const isNow=currentMonth===monthKey(today);
+  const daysInM=new Date(cy,cm,0).getDate();
+  const daysPassed=isNow?today.getDate():daysInM;
+  const daysLeft=isNow?daysInM-today.getDate():0;
+  const pace=isNow&&daysPassed>0?`Daily pace: ${fmt(spent/daysPassed)}/day · ${daysLeft} days left · projected: ${fmt(spent/daysPassed*daysInM)}`:"";
+  const byCat={};ents.forEach(e=>byCat[e.category]=(byCat[e.category]||0)+e.amount);
+  const catLines=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`  ${k}: ${fmt(v)}`).join("\n");
+  let lastSpent=0;lastEnts.forEach(e=>lastSpent+=e.amount);
+  const entLines=ents.map(e=>{const s=split(e);return `  ${e.date} | ${e.category} | ${e.partial?"partial(nec:"+fmt(s.nec)+",save:"+fmt(s.opt)+")":e.necessary?"nec":"save"} | ${fmt(e.amount)} | ${e.note||""}${e.memo?" — "+e.memo:""}`;}).join("\n");
+  const recLines=recurring.map(t=>`  ${t.name} | ${t.category} | ${fmt(t.amount)} | ${t.necessary?"nec":"save"}`).join("\n");
+  return [
+    `Account: "${acct().name}" | Month: ${monthLabel(currentMonth)} | Language: ${lang==="ko"?"Korean":"English"} | Currency: ${CUR_NAMES[meta.currency]||meta.currency}`,
+    `Budget: ${budget>0?fmt(budget):"not set"} | Spent: ${fmt(spent)} | Necessary: ${fmt(nec)} | Could-save: ${fmt(opt)}${budget>0?" | Remaining: "+fmt(budget-spent):""}`,
+    pace,
+    `Income this month: ${incTotal>0?fmt(incTotal):"none recorded"}`,
+    `Goal: ${goal&&(goal.note||goal.target>0)?((goal.note||"")+(goal.target>0?` (save ${fmt(goal.target)})`:"")):"none set"}`,
+    `Last month (${monthLabel(lastM)}): ${lastSpent>0?fmt(lastSpent):"no data"}`,
+    ents.length>0?`\nCategory breakdown:\n${catLines}`:"No entries this month.",
+    ents.length>0?`\nAll entries (${ents.length}):\n${entLines}`:"",
+    recurring.length>0?`\nRecurring items:\n${recLines}`:"",
+  ].filter(Boolean).join("\n");
+}
+
+async function callClaudeEx({content,messages,system,maxTokens}){
+  const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({content,messages,system,maxTokens})});
+  if(!res.ok)throw new Error("API "+res.status);
+  return (await res.json()).text;
+}
+
+function bbToggle(){
+  bbOpen=!bbOpen;
+  const body=document.getElementById("bb-body");
+  const chev=document.getElementById("bb-chev");
+  if(!body||!chev)return;
+  body.style.display=bbOpen?"":"none";
+  chev.classList.toggle("open",bbOpen);
+  if(bbOpen&&!bbInsightsLoaded)bbLoadInsights();
+}
+
+async function bbLoadInsights(){
+  const wrap=document.getElementById("bb-insights");if(!wrap)return;
+  if(monthEntries().length===0){
+    wrap.innerHTML=`<div class="bb-ins-placeholder">${tr("bb_no_entries")}</div>`;
+    bbInsightsLoaded=true;return;
+  }
+  wrap.innerHTML=`<div class="bb-ins-placeholder"><span class="spinner"></span> ${tr("bb_loading_insights")}</div>`;
+  const ctx=buildBudgetContext();
+  const prompt=`Based on the household data below, generate EXACTLY 3 brief insights as a JSON array. Each must have "emoji" (one emoji) and "text" (1-2 sentences using real numbers from the data, in ${lang==="ko"?"Korean":"English"}). Cover: (1) budget progress or spending pace, (2) biggest category or spending pattern, (3) goal progress or a saving opportunity. Return ONLY valid JSON — no markdown, no explanation.\n\n${ctx}\n\nJSON only: [{"emoji":"...","text":"..."},...]`;
+  try{
+    const txt=await callClaudeEx({system:BB_SYSTEM,content:prompt,maxTokens:600});
+    const raw=txt.replace(/^```[^\n]*\n?|```$/gm,"").trim();
+    const arr=JSON.parse(raw);
+    if(!Array.isArray(arr))throw new Error("not array");
+    wrap.innerHTML=arr.map(c=>`<div class="bb-insight-card"><span class="bb-insight-emoji">${esc(String(c.emoji||"💡"))}</span><span class="bb-insight-text">${esc(String(c.text||""))}</span></div>`).join("");
+    bbInsightsLoaded=true;
+  }catch(e){wrap.innerHTML=`<div class="bb-ins-placeholder">${tr("bb_insights_err")}</div>`;}
+}
+
+function bbRenderMessages(){
+  const el=document.getElementById("bb-messages");if(!el)return;
+  el.innerHTML=bbChatHistory.map(m=>{
+    if(m.role==="user")return `<div class="bb-msg user">${esc(m.content)}</div>`;
+    const html=esc(m.content).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/\n/g,"<br>");
+    return `<div class="bb-msg ai">${html}</div>`;
+  }).join("");
+  el.scrollTop=el.scrollHeight;
+}
+
+async function bbSendChat(msg){
+  const q=(msg||"").trim();if(!q||bbChatBusy)return;
+  const inp=document.getElementById("bb-input");if(inp)inp.value="";
+  const send=document.getElementById("bb-send");
+  bbChatBusy=true;if(send)send.disabled=true;
+  const ctx=buildBudgetContext();
+  const systemWithCtx=`${BB_SYSTEM}\n\nHousehold data:\n${ctx}`;
+  bbChatHistory.push({role:"user",content:q});
+  bbChatHistory.push({role:"assistant",content:`<span class="spinner"></span> ${tr("bb_thinking")}`});
+  bbRenderMessages();
+  // Slice off the loading placeholder; build clean message list
+  const msgs=bbChatHistory.slice(0,-1).map(m=>({role:m.role,content:m.content.replace(/<[^>]+>/g,"").trim()}));
+  try{
+    const txt=await callClaudeEx({system:systemWithCtx,messages:msgs,maxTokens:1024});
+    bbChatHistory[bbChatHistory.length-1]={role:"assistant",content:txt};
+  }catch(e){bbChatHistory[bbChatHistory.length-1]={role:"assistant",content:tr("bb_report_err")};}
+  bbChatBusy=false;if(send)send.disabled=false;
+  bbRenderMessages();
+}
+
+async function bbReport(){
+  const btn=document.getElementById("bb-report-btn");
+  const body=document.getElementById("bb-body");if(!body)return;
+  if(!bbOpen)bbToggle();
+  let out=document.getElementById("bb-report-out");
+  if(!out){out=document.createElement("div");out.id="bb-report-out";out.className="bb-report-out";body.insertBefore(out,body.firstChild);}
+  if(btn)btn.disabled=true;
+  const lbl=document.getElementById("bb-report-lbl");if(lbl)lbl.innerHTML=`<span class="spinner"></span>`;
+  out.innerHTML=`<span style="color:var(--ink-soft)">${tr("bb_report_loading")}</span>`;
+  const ctx=buildBudgetContext();
+  const prompt=`Generate a comprehensive monthly financial report. ${lang==="ko"?"Respond entirely in Korean.":"Respond in English."}\n\nData:\n${ctx}\n\nFormat with **bold** section headers:\n**Month Summary** — total income, spending, necessary vs flexible ratio\n**Category Breakdown** — top categories with amounts\n**Budget & Goals** — tracking progress toward budget and goals\n**vs Last Month** — comparison if data is available\n**3 Recommendations** — specific, actionable next steps\n\nBe warm, specific with real numbers. Aim for 250–300 words.`;
+  try{
+    const txt=await callClaudeEx({system:BB_SYSTEM,content:prompt,maxTokens:1500});
+    const html=esc(txt).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/\n{2,}/g,"</p><p>").replace(/\n/g,"<br>");
+    out.innerHTML="<p>"+html+"</p>";
+  }catch(e){out.innerHTML=`<span style="color:var(--ink-soft)">${tr("bb_report_err")}</span>`;}
+  if(btn)btn.disabled=false;
+  if(lbl)lbl.textContent=tr("bb_monthly_report");
+}
+
+function bbApplyI18n(){
+  const sub=document.getElementById("bb-subtitle-text");if(sub)sub.textContent=tr("bb_advisor");
+  const lbl=document.getElementById("bb-report-lbl");if(lbl&&!lbl.querySelector(".spinner"))lbl.textContent=tr("bb_monthly_report");
+  const cl=document.getElementById("bb-chat-label");if(cl)cl.textContent=tr("bb_chat_label");
+  const inp=document.getElementById("bb-input");if(inp)inp.placeholder=tr("bb_ask_ph");
+  const chips=document.getElementById("bb-chips");if(chips){
+    const suggs=[tr("bb_suggest_track"),tr("bb_suggest_save"),tr("bb_suggest_plan"),tr("bb_suggest_compare")];
+    chips.innerHTML=suggs.map(s=>`<button class="bb-chip">${esc(s)}</button>`).join("");
+    chips.querySelectorAll(".bb-chip").forEach(b=>b.onclick=()=>bbSendChat(b.textContent));
+  }
+}
+
 /* ---------- modal / toast ---------- */
 function openModal(html,locked){document.getElementById("modal").innerHTML=html;document.getElementById("modal-bg").classList.add("show");document.getElementById("modal-bg").onclick=locked?null:(e=>{if(e.target.id==="modal-bg")closeModal();});}
 function closeModal(){document.getElementById("modal-bg").classList.remove("show");}
@@ -1976,6 +2219,10 @@ async function init(){
   document.getElementById("open-income").onclick=openIncomeList;
   document.getElementById("open-fuel").onclick=openFuelView;
   document.getElementById("open-settings").onclick=openFullSettings;
+  document.getElementById("bb-head").onclick=e=>{if(!e.target.closest("#bb-report-btn"))bbToggle();};
+  document.getElementById("bb-report-btn").onclick=e=>{e.stopPropagation();bbReport();};
+  document.getElementById("bb-send").onclick=()=>bbSendChat(document.getElementById("bb-input").value);
+  document.getElementById("bb-input").addEventListener("keydown",e=>{if(e.key==="Enter")bbSendChat(e.target.value);});
   document.getElementById("ec-all").onclick=()=>{entrySort="date";entryFilter="all";entryCatSel=[];entryExpanded=false;sortOpen=false;showOpen=false;render();};
   const applyEntriesOpen=()=>{document.getElementById("entries-body").style.display=entriesOpen?"":"none";document.getElementById("ent-chev").classList.toggle("open",entriesOpen);};
   document.getElementById("entries-toggle").onclick=()=>{entriesOpen=!entriesOpen;applyEntriesOpen();};
