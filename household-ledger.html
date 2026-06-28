@@ -313,7 +313,10 @@
   .set-invite{margin-top:12px;padding:12px 13px;background:var(--nec-soft);border-radius:var(--radius-sm);border:1px solid var(--mist);}
   .set-invite-label{font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
   .set-invite-code{flex:1;font-size:20px;font-weight:700;letter-spacing:.1em;color:var(--nec-text);}
-  .set-signout{width:100%;border:1px solid var(--over-soft);background:var(--over-soft);color:var(--over-text);font-family:inherit;font-weight:600;font-size:15px;padding:13px;border-radius:var(--radius-sm);cursor:pointer;transition:.15s;margin-top:4px;}
+  .set-save{width:100%;background:var(--accent);border:1px solid var(--accent);color:#fff;font-family:inherit;font-weight:600;font-size:15px;padding:13px;border-radius:var(--radius-sm);cursor:pointer;transition:.15s;margin-bottom:8px;}
+  .set-save:hover{opacity:.88;}
+  .set-save:disabled{opacity:.45;cursor:default;}
+  .set-signout{width:100%;border:1px solid var(--over-soft);background:var(--over-soft);color:var(--over-text);font-family:inherit;font-weight:600;font-size:15px;padding:13px;border-radius:var(--radius-sm);cursor:pointer;transition:.15s;}
   .set-signout:hover{background:var(--over);color:#fff;border-color:var(--over);}
   .aso-welcome{font-size:22px;font-weight:600;color:var(--ink);margin:0 0 4px;text-align:center;}
   .aso-sub{font-size:14px;color:var(--ink-soft);margin:0 0 24px;text-align:center;}
@@ -595,7 +598,8 @@ const TRANSLATIONS={
     suggested:b=>`Suggested: <b>${b?"Necessary":"Could save"}</b>`,
     ai_pick:"You can still change it.",ai_fallback:"Couldn’t get a suggestion just now — pick whichever fits.",
     lang_en:"English",lang_ko:"한국어",
-    save_changes:"Save changes",
+    save_changes:"Save changes",saved:"Saved!",
+    unsaved_msg:"You have unsaved changes.",discard:"Discard",keep_editing:"Keep editing",
     recurring_none:n=>`No recurring items yet for ${n}.`,
     billed_day:n=>`billed day ${n}`,
     lock_removed:"Lock removed",
@@ -668,7 +672,8 @@ const TRANSLATIONS={
     suggested:b=>`추천: <b>${b?"필수":"절약 가능"}</b>`,
     ai_pick:"직접 변경할 수 있습니다.",ai_fallback:"추천을 받지 못했습니다 — 직접 선택해 주세요.",
     lang_en:"English",lang_ko:"한국어",
-    save_changes:"변경 사항 저장",
+    save_changes:"변경 사항 저장",saved:"저장되었습니다!",
+    unsaved_msg:"저장하지 않은 변경 사항이 있습니다.",discard:"버리기",keep_editing:"계속 편집",
     recurring_none:n=>`${n}의 정기 항목이 없습니다.`,
     billed_day:n=>`${n}일 결제`,
     lock_removed:"잠금이 해제되었습니다",
@@ -1195,6 +1200,11 @@ async function openFullSettings(openSection){
   try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
   const user=window.__TN_USER__||{};
   const curCur=meta.currency||"USD";
+  // Snapshot original values for dirty detection
+  const origHHName=meta.name||"";
+  const origAccNames={};meta.accounts.forEach(a=>origAccNames[a.id]=a.name);
+  const origDispName=user.name||"";
+
   openModal(
     `<h3 style="margin:0 0 16px">${tr("settings")}</h3>`+
 
@@ -1202,7 +1212,7 @@ async function openFullSettings(openSection){
     `<div class="set-acc" id="sacc-1">`+
       `<div class="set-acc-hd" id="sacc-hd-1"><span class="chev">›</span>${tr("manage_accounts")}</div>`+
       `<div class="set-acc-body" id="sacc-bd-1">`+
-        `<div class="field"><label for="s-name">${tr("household_name_label")}</label><div style="display:flex;gap:8px"><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/><button class="mini-btn" id="s-savehh" style="padding:0 14px">${tr("save")}</button></div></div>`+
+        `<div class="field"><label for="s-name">${tr("household_name_label")}</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/></div>`+
         `<div class="field"><label>${tr("accounts_label")}</label><div class="acct-manage" id="s-acct">${accRows}</div></div>`+
         `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
         `<button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center;margin-bottom:${inviteCode?10:0}px">${acct().lock?tr("manage_password",esc(acct().name)):tr("lock_account",esc(acct().name))}</button>`+
@@ -1214,7 +1224,7 @@ async function openFullSettings(openSection){
     `<div class="set-acc" id="sacc-2">`+
       `<div class="set-acc-hd" id="sacc-hd-2"><span class="chev">›</span>${tr("user_info")}</div>`+
       `<div class="set-acc-body" id="sacc-bd-2">`+
-        `<div class="field"><label>${tr("display_name")}</label><div style="display:flex;gap:8px"><input type="text" id="s-dispname" value="${esc(user.name||"")}"/><button class="mini-btn" id="s-savename" style="padding:0 14px">${tr("save_name")}</button></div></div>`+
+        `<div class="field"><label>${tr("display_name")}</label><input type="text" id="s-dispname" value="${esc(user.name||"")}"/></div>`+
         `<div class="field"><label>${tr("email_label")}</label><div style="font-size:14px;color:var(--ink-soft);padding:9px 0">${esc(user.email||"—")}</div></div>`+
         `<button class="btn-secondary" id="s-chpw" style="width:100%;justify-content:center">${tr("change_password")}</button>`+
       `</div>`+
@@ -1230,9 +1240,60 @@ async function openFullSettings(openSection){
       `</div>`+
     `</div>`+
 
+    `<button id="s-saveall" class="set-save">${tr("save_changes")}</button>`+
     `<button id="s-signout" class="set-signout">${tr("sign_out")}</button>`+
-    `<div class="modal-actions" style="margin-top:14px"><button class="ghost" onclick="closeModal()">${tr("close")}</button></div>`
+    `<div class="modal-actions" style="margin-top:14px"><button class="ghost" id="s-close">${tr("close")}</button></div>`
   );
+
+  // Dirty detection — only text inputs the user edits inline
+  const isDirty=()=>{
+    const nm=document.getElementById("s-name");
+    const dn=document.getElementById("s-dispname");
+    if(nm&&nm.value!==origHHName)return true;
+    if(dn&&dn.value!==origDispName)return true;
+    for(const inp of document.querySelectorAll("#s-acct input[data-id]")){
+      if(origAccNames[inp.dataset.id]!==undefined&&inp.value!==origAccNames[inp.dataset.id])return true;
+    }
+    return false;
+  };
+
+  // Confirm before closing when there are unsaved changes
+  const confirmClose=()=>{
+    if(!isDirty()){closeModal();return;}
+    openModal(
+      `<p style="margin:0 0 16px;font-weight:600">${tr("unsaved_msg")}</p>`+
+      `<div class="modal-actions"><button class="ghost" id="s-keep">${tr("keep_editing")}</button><button class="primary" id="s-discard">${tr("discard")}</button></div>`
+    );
+    document.getElementById("s-keep").onclick=()=>openFullSettings(null);
+    document.getElementById("s-discard").onclick=()=>closeModal();
+  };
+
+  // Save all text fields together
+  const saveAll=async()=>{
+    const btn=document.getElementById("s-saveall");
+    if(btn)btn.disabled=true;
+    try{
+      // Household name
+      const nm=document.getElementById("s-name");
+      if(nm){meta.name=nm.value.trim();document.getElementById("acct-sub").textContent=(meta.name?meta.name+" · ":"")+tr("viewing",acct().name);}
+      // Account names
+      document.querySelectorAll("#s-acct input[data-id]").forEach(inp=>{
+        const a=meta.accounts.find(x=>x.id===inp.dataset.id);
+        if(a)a.name=inp.value.trim()||a.name;
+      });
+      await saveMeta();render();
+      // Display name (only if changed)
+      const dn=document.getElementById("s-dispname");
+      if(dn&&dn.value.trim()&&dn.value.trim()!==origDispName){
+        const v=dn.value.trim();
+        const r=await fetch("/api/user",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({field:"name",value:v})});
+        if(r.ok){if(window.__TN_USER__)window.__TN_USER__.name=v;const sp=document.querySelector(".tn-username");if(sp)sp.textContent=v;}
+        else{toast(tr("couldnt_update_name"));if(btn)btn.disabled=false;return;}
+      }
+      toast(tr("saved"));
+      closeModal();
+    }catch(e){if(btn)btn.disabled=false;}
+  };
 
   // Accordion toggle — only one section open at a time
   const openAcc=n=>{
@@ -1255,10 +1316,12 @@ async function openFullSettings(openSection){
   });
   if(openSection)openAcc(openSection);
 
-  const nm=document.getElementById("s-name");
-  nm.addEventListener("input",()=>{meta.name=nm.value;document.getElementById("acct-sub").textContent=(nm.value.trim()?nm.value.trim()+" · ":"")+tr("viewing",acct().name);});
-  document.getElementById("s-savehh").onclick=async()=>{meta.name=nm.value.trim();await saveMeta();render();toast(tr("name_updated"));};
-  document.querySelectorAll("#s-acct input").forEach(inp=>inp.onchange=()=>{const a=meta.accounts.find(x=>x.id===inp.dataset.id);if(a){a.name=inp.value.trim()||a.name;saveMeta();render();}});
+  // Override backdrop click to go through confirmClose
+  document.getElementById("modal-bg").onclick=e=>{if(e.target.id==="modal-bg")confirmClose();};
+
+  document.getElementById("s-saveall").onclick=saveAll;
+  document.getElementById("s-close").onclick=confirmClose;
+
   document.querySelectorAll("#s-acct button[data-del]").forEach(b=>b.onclick=()=>deleteAccount(b.dataset.del));
   document.getElementById("s-lock").onclick=openLockForm;
   document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);};
@@ -1266,14 +1329,6 @@ async function openFullSettings(openSection){
 
   document.getElementById("s-lang-en").onclick=()=>setLang("en");
   document.getElementById("s-lang-ko").onclick=()=>setLang("ko");
-
-  document.getElementById("s-savename").onclick=async()=>{
-    const v=document.getElementById("s-dispname").value.trim();
-    if(!v)return;
-    const r=await fetch("/api/user",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({field:"name",value:v})});
-    if(r.ok){if(window.__TN_USER__)window.__TN_USER__.name=v;const sp=document.querySelector(".tn-username");if(sp)sp.textContent=v;toast(tr("name_updated"));}
-    else toast(tr("couldnt_update_name"));
-  };
 
   document.getElementById("s-chpw").onclick=()=>{
     openModal(
