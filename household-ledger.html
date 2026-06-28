@@ -608,6 +608,21 @@ const TRANSLATIONS={
     add_income:"Add income",
     car_tap_edit:"Tap edit to add details",
     car_add_details:"Add your car's details",
+    enter_amount:"Enter an amount first",
+    img_read_err:"Couldn't read that image",
+    receipt_not_found:"Receipt not found",
+    receipt_load_err:"Couldn't load receipt",
+    receipt:"Receipt",
+    receipt_attached:"Receipt attached",
+    receipt_saved_with:"Saved with this entry",
+    remove:"Remove",
+    analysis_tap:m=>`Tap analyze to look at this account’s spending for ${m}.`,
+    new_account:"New account",
+    new_account_desc:"Separate ledger with its own budget, entries, recurring items, and analysis — like Joint, His, Hers, or a specific bank account.",
+    account_name_lbl:"Account name",
+    account_name_ph2:"Joint account",
+    create:"Create",
+    account_added:"Account added",
   },
   ko:{
     welcome:n=>`환영합니다, ${n}!`,choose_account:"계정을 선택하세요",
@@ -682,6 +697,21 @@ const TRANSLATIONS={
     add_income:"수입 추가",
     car_tap_edit:"수정을 눌러 정보를 추가하세요",
     car_add_details:"차량 정보를 추가하세요",
+    enter_amount:"금액을 입력해 주세요",
+    img_read_err:"이미지를 읽을 수 없습니다",
+    receipt_not_found:"영수증을 찾을 수 없습니다",
+    receipt_load_err:"영수증을 불러올 수 없습니다",
+    receipt:"영수증",
+    receipt_attached:"영수증 첨부됨",
+    receipt_saved_with:"이 항목과 함께 저장됩니다",
+    remove:"제거",
+    analysis_tap:m=>`${m}의 지출을 분석하려면 분석 버튼을 누르세요.`,
+    new_account:"새 계정",
+    new_account_desc:"예산, 내역, 정기 항목, 분석이 분리된 독립 장부입니다. 예: 공동, 개인, 특정 통장.",
+    account_name_lbl:"계정 이름",
+    account_name_ph2:"공동 계정",
+    create:"만들기",
+    account_added:"계정이 추가되었습니다",
   }
 };
 const CAT_KO={"Rent / Housing":"주거/월세","Utilities":"공과금","Groceries":"식료품","Public transit":"대중교통","Fuel / Gas":"연료/주유","Car payment / upkeep":"자동차","Taxi / Rideshare":"택시/라이드","Phone / Internet":"통신비","Health":"의료/건강","Insurance":"보험","Dining out":"외식","Shopping":"쇼핑","Entertainment":"여가/오락","Subscriptions":"구독","Gifts":"선물","Other":"기타"};
@@ -993,12 +1023,12 @@ function entryRowHtml(e){
   const ds=new Date(e.date+"T00:00:00").toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"short",day:"numeric"});
   const cls=e.partial?"part":(e.necessary?"nec":"opt");
   const ttl=e.partial?tr("partially_nec"):(e.necessary?tr("necessary"):tr("could_save"));
-  const tip=[e.category,e.memo,e.fuel?fuelLine(e):"",e.partial?`Necessary ${fmt(split(e).nec)} · Could save ${fmt(split(e).opt)}`:""].filter(Boolean).join(" · ");
+  const tip=[catLabel(e.category),e.memo,e.fuel?fuelLine(e):"",e.partial?`${tr("necessary")} ${fmt(split(e).nec)} · ${tr("could_save")} ${fmt(split(e).opt)}`:""].filter(Boolean).join(" · ");
   return `<div class="entry" data-edit="${e.id}" title="${esc(tip)}">
     <span class="edot ${cls}" title="${ttl}"></span>
     <span class="amt">${fmt(e.amount)}</span>
     <span class="meta">${ds}</span>
-    <span class="ecat">${esc(e.category)}${e.isRecurring?'<span class="rec-badge">↻</span>':''}${e.hasPhoto?' ▦':''}</span>
+    <span class="ecat">${esc(catLabel(e.category))}${e.isRecurring?'<span class="rec-badge">↻</span>':''}${e.hasPhoto?' ▦':''}</span>
     <span class="ememo">${esc(e.note&&e.note!==e.category?e.note:"")+(e.note&&e.note!==e.category&&e.memo?" · ":"")}${e.memo?esc(e.memo):""}</span>
   </div>`;
 }
@@ -1421,7 +1451,7 @@ function updatePartialHint(){
 }
 async function addEntry(){
   const amount=parseFloat(document.getElementById("amount").value);
-  if(!amount||amount<=0){toast("Enter an amount first");document.getElementById("amount").focus();return;}
+  if(!amount||amount<=0){toast(tr("enter_amount"));document.getElementById("amount").focus();return;}
   const id=uid();
   const entry={id,accountId:meta.currentAccountId,type:"expense",amount,
     note:document.getElementById("note").value.trim(),
@@ -1540,7 +1570,7 @@ function openEditEntry(id){
   drawEReceipt();
   document.getElementById("e-file").onchange=async ev=>{
     const f=ev.target.files[0];if(!f)return;
-    try{pendingEditPhoto=await resizeImage(f,1200,0.7);drawEReceipt();scanEditReceipt();}catch(err){toast("Couldn't read that image");}
+    try{pendingEditPhoto=await resizeImage(f,1200,0.7);drawEReceipt();scanEditReceipt();}catch(err){toast(tr("img_read_err"));}
   };
   document.getElementById("e-del").onclick=async()=>{await delEntry(e.id);closeModal();};
   document.getElementById("e-save").onclick=async()=>{
@@ -1580,11 +1610,11 @@ async function onFile(file){
   if(!file)return;const status=document.getElementById("scan-status");
   try{
     pendingPhoto=await resizeImage(file,1200,0.7);
-    document.getElementById("receipt-prev").innerHTML=`<div class="receipt-prev"><img src="${pendingPhoto.dataUrl}" alt="receipt"/><div class="meta"><div>Receipt attached</div><div class="s">Saved with this entry</div></div><button class="mini-btn" id="rm-btn">Remove</button></div>`;
+    document.getElementById("receipt-prev").innerHTML=`<div class="receipt-prev"><img src="${pendingPhoto.dataUrl}" alt="receipt"/><div class="meta"><div>${tr("receipt_attached")}</div><div class="s">${tr("receipt_saved_with")}</div></div><button class="mini-btn" id="rm-btn">${tr("remove")}</button></div>`;
     document.getElementById("rm-btn").onclick=()=>{pendingPhoto=null;document.getElementById("receipt-prev").innerHTML="";status.className="scan-status";};
     status.className="scan-status";
     scanReceipt();
-  }catch(e){toast("Couldn't read that image");}
+  }catch(e){toast(tr("img_read_err"));}
 }
 async function scanReceipt(){
   if(!pendingPhoto)return;
@@ -1608,13 +1638,13 @@ async function scanReceipt(){
   }
 }
 async function viewPhoto(id){
-  try{const r=await store.get(PKEY(id),SHARED);if(!r||!r.value){toast("Receipt not found");return;}
-    openModal(`<h3>Receipt</h3><img class="full" src="data:image/jpeg;base64,${r.value}" alt="receipt"/><div class="modal-actions"><button class="ghost" onclick="closeModal()">Close</button></div>`);
-  }catch(e){toast("Couldn't load receipt");}
+  try{const r=await store.get(PKEY(id),SHARED);if(!r||!r.value){toast(tr("receipt_not_found"));return;}
+    openModal(`<h3>${tr("receipt")}</h3><img class="full" src="data:image/jpeg;base64,${r.value}" alt="receipt"/><div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("close")}</button></div>`);
+  }catch(e){toast(tr("receipt_load_err"));}
 }
 
 /* ---------- analysis ---------- */
-function resetAnalysis(){document.getElementById("analysis-body").innerHTML='<span class="placeholder">Tap analyze to look at this account\u2019s spending for '+monthLabel(currentMonth)+'.</span>';}
+function resetAnalysis(){document.getElementById("analysis-body").innerHTML=`<span class="placeholder">${tr("analysis_tap",monthLabel(currentMonth))}</span>`;}
 
 function switchAccount(id){
   if(id===meta.currentAccountId)return;
@@ -1680,13 +1710,13 @@ Write a concise analysis (about 160 words) in plain text, short paragraphs, no m
 
 /* ---------- accounts ---------- */
 function openAddAccount(){
-  openModal(`<h3>New account</h3><p>Separate ledger with its own budget, entries, recurring items, and analysis — like Joint, His, Hers, or a specific bank account.</p>
-    <div class="field"><label for="m-acct">Account name</label><input type="text" id="m-acct" placeholder="Joint account" /></div>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="m-acct-save">Create</button></div>`);
+  openModal(`<h3>${tr("new_account")}</h3><p>${tr("new_account_desc")}</p>
+    <div class="field"><label for="m-acct">${tr("account_name_lbl")}</label><input type="text" id="m-acct" placeholder="${tr("account_name_ph2")}" /></div>
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="m-acct-save">${tr("create")}</button></div>`);
   setTimeout(()=>document.getElementById("m-acct").focus(),50);
   document.getElementById("m-acct-save").onclick=async()=>{
-    const name=document.getElementById("m-acct").value.trim()||"New account";const id=uid();
-    meta.accounts.push({id,name});meta.currentAccountId=id;await saveMeta();closeModal();resetAnalysis();render();toast("Account added");
+    const name=document.getElementById("m-acct").value.trim()||tr("new_account");const id=uid();
+    meta.accounts.push({id,name});meta.currentAccountId=id;await saveMeta();closeModal();resetAnalysis();render();toast(tr("account_added"));
   };
   document.getElementById("m-acct").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("m-acct-save").click();});
 }
