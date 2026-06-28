@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import Logo from "@/components/Logo";
 import PasswordInput from "@/components/PasswordInput";
 import { signUp } from "@/app/actions/auth";
-import { getLang, AUTH_STRINGS } from "@/lib/i18n";
+import { AUTH_STRINGS } from "@/lib/i18n";
+import { getLang } from "@/lib/i18n-server";
 import styles from "../auth.module.css";
 
 export default async function SignUpPage({
