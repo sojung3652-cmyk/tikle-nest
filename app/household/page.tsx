@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import styles from "./page.module.css";
 import { createHousehold, joinHousehold } from "@/app/actions/household";
+import { AUTH_STRINGS } from "@/lib/i18n";
 
 const CURRENCIES = [
   { code: "USD", label: "$ US dollar" },
@@ -21,7 +22,15 @@ export default function HouseholdPage() {
   const [tab, setTab] = useState<"create" | "join">("create");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [lang, setLang] = useState<"en" | "ko">("en");
   const router = useRouter();
+
+  useEffect(() => {
+    const l = localStorage.getItem("tn-lang");
+    if (l === "ko") setLang("ko");
+  }, []);
+
+  const s = AUTH_STRINGS[lang];
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,11 +59,11 @@ export default function HouseholdPage() {
 
   return (
     <div className={styles.page}>
-      <button className={styles.backBtn} onClick={handleBack}>← Back</button>
+      <button className={styles.backBtn} onClick={handleBack}>{s.back}</button>
       <div className={styles.card}>
         <div className={styles.brand}>
           <Logo size={36} />
-          <span className={styles.wordmark}>Tikle Nest</span>
+          <span className={styles.wordmark}>{s.tikle_nest}</span>
         </div>
 
         <div className={styles.tabs}>
@@ -62,13 +71,13 @@ export default function HouseholdPage() {
             className={`${styles.tab} ${tab === "create" ? styles.tabActive : ""}`}
             onClick={() => { setTab("create"); setError(""); }}
           >
-            Create household
+            {s.create_household}
           </button>
           <button
             className={`${styles.tab} ${tab === "join" ? styles.tabActive : ""}`}
             onClick={() => { setTab("join"); setError(""); }}
           >
-            Join household
+            {s.join_household}
           </button>
         </div>
 
@@ -76,22 +85,20 @@ export default function HouseholdPage() {
 
         {tab === "create" && (
           <form onSubmit={handleCreate}>
-            <p className={styles.sub}>
-              Name your household. Your partner can join using the invite code — find it anytime in Account settings.
-            </p>
+            <p className={styles.sub}>{s.partner_hint}</p>
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="name">Household name</label>
+              <label className={styles.label} htmlFor="name">{s.household_name_label}</label>
               <input
                 className={styles.input}
                 id="name"
                 name="name"
                 type="text"
-                placeholder="e.g. Kim Family"
+                placeholder={s.household_name_ph}
                 required
               />
             </div>
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="currency">Currency</label>
+              <label className={styles.label} htmlFor="currency">{s.currency_label}</label>
               <select className={styles.input} id="currency" name="currency">
                 {CURRENCIES.map(c => (
                   <option key={c.code} value={c.code}>{c.label}</option>
@@ -99,30 +106,28 @@ export default function HouseholdPage() {
               </select>
             </div>
             <button className={styles.submit} type="submit" disabled={pending}>
-              {pending ? "Creating…" : "Create household"}
+              {pending ? "…" : s.submit_create}
             </button>
           </form>
         )}
 
         {tab === "join" && (
           <form onSubmit={handleJoin}>
-            <p className={styles.sub}>
-              Enter the 6-letter invite code from your partner&apos;s household.
-            </p>
+            <p className={styles.sub}>{s.join_hint}</p>
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="code">Invite code</label>
+              <label className={styles.label} htmlFor="code">{s.invite_code_label}</label>
               <input
                 className={`${styles.input} ${styles.codeInput}`}
                 id="code"
                 name="code"
                 type="text"
-                placeholder="ABC123"
+                placeholder={s.invite_code_ph}
                 maxLength={6}
                 required
               />
             </div>
             <button className={styles.submit} type="submit" disabled={pending}>
-              {pending ? "Joining…" : "Join household"}
+              {pending ? "…" : s.submit_join}
             </button>
           </form>
         )}

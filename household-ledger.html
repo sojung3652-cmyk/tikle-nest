@@ -516,13 +516,209 @@ const THEMES={
 };
 
 function applyTheme(id){
-  const t=THEMES[id]||THEMES.blush;
-  t.v.split(";").forEach(pair=>{
+  const thm=THEMES[id]||THEMES.blush;
+  thm.v.split(";").forEach(pair=>{
     const i=pair.indexOf(":");
     if(i<0)return;
     document.documentElement.style.setProperty(pair.slice(0,i),pair.slice(i+1));
   });
   localStorage.setItem("tn-theme",id);
+}
+
+/* ── i18n ── */
+const TRANSLATIONS={
+  en:{
+    welcome:n=>`Welcome, ${n}!`,choose_account:"Choose an account to manage",
+    private_locked:"Private · tap to unlock",private_unlocked:"Private · unlocked",shared:"Shared account",
+    viewing:n=>`Viewing ${n}`,locked_acct:n=>`🔒 ${n} is locked`,
+    switch_account:"Switch account?",switch_confirm:"Go back to the account list? Any unsaved changes will be kept.",
+    go_to_accts:"Go back",stay:"Stay",
+    budget_this_month:"Budget this month",not_set:"Not set",edit_budget:"Edit budget",goal:"Goal",income:"Income",
+    necessary:"Necessary",could_save:"Could save",unspent:"Unspent",over_budget:"Over budget",
+    budget:"Budget",spent:"Spent",remaining:"Remaining",flexible:"Flexible (could save)",
+    add_an_entry:"Add an entry",amount:"Amount",what_for:"What for?",what_was_it_for:"What was it for?",
+    category:"Category",date:"Date",how_count:"How should this count? (your call)",partially:"Partially",
+    how_much_nec:"How much of it is necessary?",the_rest:"The rest counts as could-save.",
+    ai_recommend:"✦ Not sure? Let AI recommend",
+    memo_label:"Memo — why is it necessary or not?",memo_placeholder:"Your reasoning — just for you",
+    receipt_label:"Receipt or photo",attach_receipt:"Attach a receipt or photo",add_entry:"Add entry",
+    fuel:"⛽ Fuel",fuel_details:"Fuel details — amount above is the total paid",
+    gallons:"Gallons",liters:"Liters",price_per_gallon:"Price per gallon",price_per_liter:"Price per liter",
+    miles_driven:"Miles driven",km_driven:"Km driven",
+    get_fuel_advice:"Get fuel advice",analyzing_fuel_lbl:"Analyzing…",no_fuel_records:"Add some fuel records first.",
+    looking_at_fillups:"Looking at your fill-ups…",
+    where_went:"Where the money went",add_entry_breakdown:"Add an entry and the breakdown shows up here.",
+    goal_prefix:"Goal: ",no_goal:"No goal set this month — tap Goal to add one.",
+    goal_set_aside:(s,g,p)=>` — ${s} of ${g} set aside (${p}%)`,goal_target:g=>` — target ${g}`,
+    insight_over:(o,s)=>`You're <b>${o}</b> over budget on this account. Trimming flexible spending (${s}) is the quickest fix.`,
+    insight_save:(o,n)=>`<b>${o}</b> went to flexible spending — that's the money you could save. Necessary costs were <b>${n}</b>.`,
+    insight_good:r=>`Everything logged was necessary so far${r?` — <b>${r}</b> still unspent.`:"."}`,
+    entries:"Entries",all:"All",sort:"Sort",show:"Show",
+    newest:"Newest",oldest:"Oldest",high_to_low:"High → low",low_to_high:"Low → high",
+    type:"Type",category_filter:"Category",
+    nothing_here:(m,a)=>`Nothing here for ${m} on ${a}.`,
+    add_entry_start:"Add an entry above to start tracking.",try_different:"Try a different option.",
+    show_less:"Show less",see_all:n=>`See all (${n})`,
+    spending_analysis:"Spending analysis",analyze_account:"Analyze this account",
+    analyzing:"Analyzing…",
+    analysis_placeholder:"Pick an account and tap analyze — I'll look at this month's spending patterns for just that account and suggest where you could save.",
+    no_entries_month:'No entries this month on this account yet — add a few first.',
+    looking_patterns:"Looking at the patterns…",
+    couldnt_analyze:"Couldn’t run the analysis just now. Please try again in a moment.",
+    couldnt_fuel:"Couldn’t analyze just now. Try again in a moment.",
+    recurring:"Recurring & subscriptions",
+    recurring_desc:"Bills that repeat every month, like rent, your phone plan, subscriptions, or utilities. They appear automatically each month with their regular amount, and you can edit any month's copy when the cost changes.",
+    add_recurring:"＋ Add recurring item",
+    settings:"Settings",manage_accounts:"Manage accounts",
+    household_name_label:"Household name",accounts_label:"Accounts",new_account_ph:"New account name",add:"Add",
+    lock_account:n=>`Lock ${n} with a password`,manage_password:n=>`🔒 ${n} — manage password`,
+    invite_partner:"Invite your partner",invite_hint:"Share this code so your partner can join at sign-up.",
+    copy:"Copy",invite_copied:"Invite code copied!",
+    user_info:"User information",display_name:"Display name",save_name:"Save",
+    email_label:"Email",change_password:"Change password",
+    general:"General",color_theme:"Color theme",language:"Language",
+    currency_label:"Currency",change_currency:c=>`Change currency (${c})`,sign_out:"Sign out",
+    close:"Close",cancel:"Cancel",save:"Save",del:"Delete",edit_btn:"Edit",back:"Back",
+    new_pw:"New password",pw_placeholder:"At least 6 characters",save_password:"Save password",
+    name_updated:"Name updated",couldnt_update_name:"Couldn’t update name",
+    pw_updated:"Password updated",couldnt_update_pw:"Couldn’t update password",at_least_6:"At least 6 characters",
+    account_add:"＋ Account",
+    partially_nec:"Partially necessary",partial_hint:(cs,tot)=>`Could save: ${cs} of ${tot}`,
+    thinking:"Thinking…",
+    scan_reading:"Reading the receipt…",scan_ok:"Filled from receipt — check and adjust if needed.",
+    scan_err:"Couldn’t read it automatically — fill in manually, or",scan_retry:"retry",
+    suggested:b=>`Suggested: <b>${b?"Necessary":"Could save"}</b>`,
+    ai_pick:"You can still change it.",ai_fallback:"Couldn’t get a suggestion just now — pick whichever fits.",
+    lang_en:"English",lang_ko:"한국어",
+    save_changes:"Save changes",
+    recurring_none:n=>`No recurring items yet for ${n}.`,
+    billed_day:n=>`billed day ${n}`,
+    lock_removed:"Lock removed",
+    manage_lock:"Manage lock",
+    lock_account_hdr:"Lock account",
+    add_income:"Add income",
+    car_tap_edit:"Tap edit to add details",
+    car_add_details:"Add your car's details",
+  },
+  ko:{
+    welcome:n=>`환영합니다, ${n}!`,choose_account:"계정을 선택하세요",
+    private_locked:"비밀 · 탭하여 잠금 해제",private_unlocked:"비밀 · 잠금 해제됨",shared:"공유 계정",
+    viewing:n=>`${n} 보는 중`,locked_acct:n=>`🔒 ${n} 잠김`,
+    switch_account:"계정 전환?",switch_confirm:"계정 선택 화면으로 돌아가시겠어요?",
+    go_to_accts:"돌아가기",stay:"취소",
+    budget_this_month:"이번 달 예산",not_set:"미설정",edit_budget:"예산 수정",goal:"목표",income:"수입",
+    necessary:"필수",could_save:"절약 가능",unspent:"남은 금액",over_budget:"예산 초과",
+    budget:"예산",spent:"지출",remaining:"잔액",flexible:"절약 가능 지출",
+    add_an_entry:"항목 추가",amount:"금액",what_for:"무엇을 위해?",what_was_it_for:"무엇에 사용했나요?",
+    category:"카테고리",date:"날짜",how_count:"어떻게 분류할까요?",partially:"부분",
+    how_much_nec:"얼마가 필수인가요?",the_rest:"나머지는 절약 가능으로 분류됩니다.",
+    ai_recommend:"✦ 모르겠어요? AI 추천 받기",
+    memo_label:"메모 — 필수인지 아닌지의 이유",memo_placeholder:"나만 보는 메모",
+    receipt_label:"영수증 또는 사진",attach_receipt:"영수증 또는 사진 첨부",add_entry:"항목 추가",
+    fuel:"⛽ 주유",fuel_details:"주유 기록 — 위 금액은 총 결제 금액",
+    gallons:"갤런",liters:"리터",price_per_gallon:"갤런당 가격",price_per_liter:"리터당 가격",
+    miles_driven:"주행 거리 (마일)",km_driven:"주행 거리 (km)",
+    get_fuel_advice:"연비 조언 받기",analyzing_fuel_lbl:"분석 중…",no_fuel_records:"주유 기록을 먼저 추가하세요.",
+    looking_at_fillups:"주유 기록을 분석 중입니다…",
+    where_went:"지출 내역",add_entry_breakdown:"항목을 추가하면 분류가 표시됩니다.",
+    goal_prefix:"목표: ",no_goal:"이번 달 목표가 없습니다 — 목표를 추가해 보세요.",
+    goal_set_aside:(s,g,p)=>` — ${s} 중 ${g} 달성 (${p}%)`,goal_target:g=>` — 목표 ${g}`,
+    insight_over:(o,s)=>`이 계정에서 예산을 <b>${o}</b> 초과했습니다. 절약 가능 지출(${s})을 줄이는 것이 가장 빠른 방법입니다.`,
+    insight_save:(o,n)=>`<b>${o}</b>이 절약 가능 지출로 기록되었습니다. 필수 비용은 <b>${n}</b>이었습니다.`,
+    insight_good:r=>`지금까지 모든 지출이 필수 항목이었습니다${r?` — <b>${r}</b>이 아직 남아 있습니다.`:"."}`,
+    entries:"내역",all:"전체",sort:"정렬",show:"보기",
+    newest:"최신순",oldest:"오래된순",high_to_low:"높은순",low_to_high:"낮은순",
+    type:"유형",category_filter:"카테고리",
+    nothing_here:(m,a)=>`${a}의 ${m} 내역이 없습니다.`,
+    add_entry_start:"위에서 항목을 추가하면 추적이 시작됩니다.",try_different:"다른 옵션을 시도해 보세요.",
+    show_less:"접기",see_all:n=>`전체 보기 (${n})`,
+    spending_analysis:"지출 분석",analyze_account:"이 계정 분석하기",
+    analyzing:"분석 중…",
+    analysis_placeholder:"계정을 선택하고 분석 버튼을 눌러보세요 — 이번 달 지출 패턴을 분석해 절약 방법을 제안해 드립니다.",
+    no_entries_month:"이번 달 이 계정에 내역이 없습니다 — 몇 가지 추가해 보세요.",
+    looking_patterns:"패턴을 분석 중…",
+    couldnt_analyze:"분석을 실행하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    couldnt_fuel:"분석하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    recurring:"정기 결제 & 구독",
+    recurring_desc:"매달 반복되는 고정 지출입니다. 월세, 통신비, 구독 서비스, 공과금 등이 해당됩니다. 매달 자동으로 추가되며, 금액이 달라질 때는 해당 달의 항목을 수정할 수 있습니다.",
+    add_recurring:"＋ 정기 항목 추가",
+    settings:"설정",manage_accounts:"계정 관리",
+    household_name_label:"가계 이름",accounts_label:"계정",new_account_ph:"새 계정 이름",add:"추가",
+    lock_account:n=>`${n}에 비밀번호 설정`,manage_password:n=>`🔒 ${n} — 비밀번호 관리`,
+    invite_partner:"파트너 초대",invite_hint:"이 코드를 파트너에게 공유하면 회원가입 시 참여할 수 있습니다.",
+    copy:"복사",invite_copied:"초대 코드가 복사되었습니다!",
+    user_info:"사용자 정보",display_name:"표시 이름",save_name:"저장",
+    email_label:"이메일",change_password:"비밀번호 변경",
+    general:"일반",color_theme:"색상 테마",language:"언어",
+    currency_label:"통화",change_currency:c=>`통화 변경 (${c})`,sign_out:"로그아웃",
+    close:"닫기",cancel:"취소",save:"저장",del:"삭제",edit_btn:"수정",back:"뒤로",
+    new_pw:"새 비밀번호",pw_placeholder:"6자리 이상",save_password:"비밀번호 저장",
+    name_updated:"이름이 변경되었습니다",couldnt_update_name:"이름을 변경할 수 없습니다",
+    pw_updated:"비밀번호가 변경되었습니다",couldnt_update_pw:"비밀번호를 변경할 수 없습니다",at_least_6:"6자리 이상 입력하세요",
+    account_add:"＋ 계정",
+    partially_nec:"부분 필수",partial_hint:(cs,tot)=>`절약 가능: ${cs} / ${tot}`,
+    thinking:"추천 받는 중…",
+    scan_reading:"영수증을 읽는 중…",scan_ok:"영수증에서 입력했습니다 — 확인 후 조정하세요.",
+    scan_err:"자동으로 읽지 못했습니다. 직접 입력하거나",scan_retry:"다시 시도",
+    suggested:b=>`추천: <b>${b?"필수":"절약 가능"}</b>`,
+    ai_pick:"직접 변경할 수 있습니다.",ai_fallback:"추천을 받지 못했습니다 — 직접 선택해 주세요.",
+    lang_en:"English",lang_ko:"한국어",
+    save_changes:"변경 사항 저장",
+    recurring_none:n=>`${n}의 정기 항목이 없습니다.`,
+    billed_day:n=>`${n}일 결제`,
+    lock_removed:"잠금이 해제되었습니다",
+    manage_lock:"잠금 관리",
+    lock_account_hdr:"계정 잠금",
+    add_income:"수입 추가",
+    car_tap_edit:"수정을 눌러 정보를 추가하세요",
+    car_add_details:"차량 정보를 추가하세요",
+  }
+};
+const CAT_KO={"Rent / Housing":"주거/월세","Utilities":"공과금","Groceries":"식료품","Public transit":"대중교통","Fuel / Gas":"연료/주유","Car payment / upkeep":"자동차","Taxi / Rideshare":"택시/라이드","Phone / Internet":"통신비","Health":"의료/건강","Insurance":"보험","Dining out":"외식","Shopping":"쇼핑","Entertainment":"여가/오락","Subscriptions":"구독","Gifts":"선물","Other":"기타"};
+let lang=localStorage.getItem("tn-lang")||"en";
+function tr(key,...args){const v=(TRANSLATIONS[lang]||TRANSLATIONS.en)[key]??TRANSLATIONS.en[key]??key;return typeof v==="function"?v(...args):v;}
+function catLabel(name){return lang==="ko"&&CAT_KO[name]?CAT_KO[name]:name;}
+function setLang(l){lang=l;localStorage.setItem("tn-lang",l);document.cookie="tn-lang="+l+";path=/;max-age=31536000";document.documentElement.lang=l;applyI18n();render();openFullSettings();}
+function applyI18n(){
+  const set=(id,key)=>{const el=document.getElementById(id);if(el)el.textContent=tr(key);};
+  const lbl=(sel,key)=>{const el=document.querySelector(sel);if(el)el.textContent=tr(key);};
+  const ph=(id,key)=>{const el=document.getElementById(id);if(el)el.placeholder=tr(key);};
+  const tog=(id,key)=>{const el=document.getElementById(id);if(!el)return;const d=el.querySelector(".d");el.textContent=tr(key);if(d)el.prepend(d);};
+  set("open-fuel","fuel");set("edit-budget","edit_budget");set("edit-goal","goal");
+  set("open-income","income");set("open-settings","settings");set("add","add_entry");
+  set("add-recur","add_recurring");set("ec-all","all");set("ec-sort","sort");
+  set("ec-show","show");set("analyze-label","analyze_account");
+  set("unit-g","gallons");set("unit-l","liters");set("btn-rec","ai_recommend");
+  tog("btn-nec","necessary");tog("btn-opt","could_save");tog("btn-part","partially");
+  lbl(".hero .eyebrow","budget_this_month");
+  lbl(".grid .panel:first-child h2","add_an_entry");
+  lbl(".grid .panel:last-child h2","where_went");
+  lbl(".analysis-head h2","spending_analysis");
+  lbl(".analysis-body .placeholder","analysis_placeholder");
+  lbl("label[for='amount']","amount");lbl("label[for='note']","what_for");
+  lbl("label[for='category']","category");lbl("label[for='date']","date");
+  lbl("label[for='memo']","memo_label");lbl("label[for='partial-nec']","how_much_nec");
+  lbl("#fuel-field>label","fuel_details");
+  const toggle3=document.querySelector(".toggle-3");if(toggle3){const f=toggle3.closest(".field");const l=f&&f.querySelector("label");if(l)l.textContent=tr("how_count");}
+  ph("note","what_was_it_for");ph("memo","memo_placeholder");
+  const drop=document.getElementById("drop");if(drop)drop.innerHTML="<span>＋</span> "+tr("attach_receipt");
+  const fileFld=document.getElementById("file");if(fileFld){const f=fileFld.closest(".field");if(f){const l=f.querySelector("label");if(l)l.textContent=tr("receipt_label");}}
+  const partH=document.getElementById("partial-hint");if(partH&&!document.getElementById("partial-row").classList.contains("show"))partH.textContent=tr("the_rest");
+  const lgs=document.querySelectorAll(".legend>div");const lgKeys=["necessary","could_save","unspent","over_budget"];lgs.forEach((d,i)=>{for(const ch of d.childNodes){if(ch.nodeType===3){ch.textContent=tr(lgKeys[i])+" ";break;}}});
+  document.querySelectorAll(".stat .k").forEach((el,i)=>el.textContent=[tr("budget"),tr("spent"),tr("remaining"),tr("flexible")][i]||el.textContent);
+  const entsH2=document.querySelector(".entries-head h2");if(entsH2){const chev=entsH2.querySelector(".chev");entsH2.textContent=tr("entries");if(chev)entsH2.prepend(chev);}
+  const recurSum=document.querySelector("details.box summary");if(recurSum){const chev=recurSum.querySelector(".chev");recurSum.textContent=tr("recurring");if(chev)recurSum.prepend(chev);}
+  lbl("details.box .box-body>p","recurring_desc");
+  const catSel=document.getElementById("category");if(catSel)catSel.innerHTML=CATEGORIES.map(c=>`<option value="${esc(c.name)}">${esc(catLabel(c.name))}</option>`).join("");
+  document.querySelectorAll("#sort-panel [data-sort='date']").forEach(b=>b.textContent=tr("newest"));
+  document.querySelectorAll("#sort-panel [data-sort='date-asc']").forEach(b=>b.textContent=tr("oldest"));
+  document.querySelectorAll("#sort-panel [data-sort='amount-desc']").forEach(b=>b.textContent=tr("high_to_low"));
+  document.querySelectorAll("#sort-panel [data-sort='amount-asc']").forEach(b=>b.textContent=tr("low_to_high"));
+  document.querySelectorAll("#show-nec [data-f='all']").forEach(b=>b.textContent=tr("all"));
+  document.querySelectorAll("#show-nec [data-f='nec']").forEach(b=>b.textContent=tr("necessary"));
+  document.querySelectorAll("#show-nec [data-f='opt']").forEach(b=>b.textContent=tr("could_save"));
+  document.querySelectorAll(".entry-panel .seg-label").forEach((el,i)=>el.textContent=i===0?tr("type"):tr("category_filter"));
+  document.documentElement.lang=lang;
 }
 
 function renderThemeCards(containerId){
@@ -611,7 +807,7 @@ let entrySort="date",entryFilter="all",entryCatSel=[],entryExpanded=false,sortOp
 
 /* ---------- helpers ---------- */
 function monthKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
-function monthLabel(k){const[y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("en-US",{month:"long",year:"numeric"});}
+function monthLabel(k){const[y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"long",year:"numeric"});}
 function uid(){return crypto.randomUUID?crypto.randomUUID():"id"+Date.now()+Math.random().toString(16).slice(2);}
 function cur(){return CUR[meta.currency]||CUR.USD;}
 function fmt(n){const c=cur();return c.sym+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:c.dec,maximumFractionDigits:c.dec});}
@@ -677,12 +873,12 @@ function resizeImage(file,maxDim,quality){
 /* ---------- render ---------- */
 function render(){
   if(acct()&&acct().lock&&!unlocked.has(acct().id)){
-    document.getElementById("acct-sub").textContent="🔒 "+acct().name+" is locked";
+    document.getElementById("acct-sub").textContent=tr("locked_acct",acct().name);
     return;
   }
   ensureRecurring();
   const c=cur();
-  document.getElementById("acct-sub").textContent=(meta.name?.trim()?meta.name.trim()+" · ":"")+(acct()?("Viewing "+acct().name):"");
+  document.getElementById("acct-sub").textContent=(meta.name?.trim()?meta.name.trim()+" · ":" ")+(acct()?tr("viewing",acct().name):"");
   document.getElementById("month-label").textContent=monthLabel(currentMonth);
   document.getElementById("cur-sym").textContent=c.sym;
   document.getElementById("cur-sym2").textContent=c.sym;
@@ -690,7 +886,7 @@ function render(){
   document.getElementById("change-cur").textContent=c.sym+" "+meta.currency+" ▾";
 
   const pills=document.getElementById("acct-pills");
-  pills.innerHTML=meta.accounts.map(a=>`<button class="pill" data-id="${a.id}" aria-pressed="${a.id===meta.currentAccountId}">${a.lock?"🔒 ":""}${esc(a.name)}</button>`).join("")+`<button class="pill add" id="add-acct">＋ Account</button>`;
+  pills.innerHTML=meta.accounts.map(a=>`<button class="pill" data-id="${a.id}" aria-pressed="${a.id===meta.currentAccountId}">${a.lock?"🔒 ":""}${esc(a.name)}</button>`).join("")+`<button class="pill add" id="add-acct">${tr("account_add")}</button>`;
   pills.querySelectorAll(".pill[data-id]").forEach(b=>b.onclick=()=>switchAccount(b.dataset.id));
   document.getElementById("add-acct").onclick=openAddAccount;
 
@@ -700,7 +896,7 @@ function render(){
   const spent=nec+opt,remaining=budget-spent,over=spent>budget&&budget>0;
   const denom=Math.max(budget,spent,1);
 
-  document.getElementById("hero-amount").textContent=budget>0?fmt(budget):"Not set";
+  document.getElementById("hero-amount").textContent=budget>0?fmt(budget):tr("not_set");
   document.getElementById("seg-nec").style.width=(budget>0?Math.min(nec,budget)/denom:nec/Math.max(spent,1))*100+"%";
   document.getElementById("seg-opt").style.width=(budget>0?Math.min(opt,Math.max(budget-nec,0))/denom:opt/Math.max(spent,1))*100+"%";
   document.getElementById("seg-over").style.width=over?((spent-budget)/denom*100)+"%":"0";
@@ -722,25 +918,25 @@ function render(){
   const goal=meta.goals?meta.goals[bkey()]:null;
   const gsEl=document.getElementById("goal-status");
   if(goal&&(goal.note||goal.target>0)){
-    let txt="Goal: "+(goal.note||("Save "+fmt(goal.target)));
-    if(goal.target>0&&budget>0){const saved=Math.max(remaining,0);const pct=Math.min(Math.round(saved/goal.target*100),100);txt+=" — "+fmt(saved)+" of "+fmt(goal.target)+" set aside ("+pct+"%)";}
-    else if(goal.target>0)txt+=" — target "+fmt(goal.target);
+    let txt=tr("goal_prefix")+(goal.note||("Save "+fmt(goal.target)));
+    if(goal.target>0&&budget>0){const saved=Math.max(remaining,0);const pct=Math.min(Math.round(saved/goal.target*100),100);txt+=tr("goal_set_aside",fmt(saved),fmt(goal.target),pct);}
+    else if(goal.target>0)txt+=tr("goal_target",fmt(goal.target));
     gsEl.textContent=txt;gsEl.style.display="block";
-  }else{gsEl.textContent="No goal set this month — tap Goal to add one.";gsEl.style.display="block";}
+  }else{gsEl.textContent=tr("no_goal");gsEl.style.display="block";}
 
   /* categories */
   const byCat={};ents.forEach(e=>byCat[e.category]=(byCat[e.category]||0)+e.amount);
   const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);const maxCat=cats.length?cats[0][1]:1;
   document.getElementById("cat-list").innerHTML=cats.length?cats.map(([name,amt])=>{
     const def=CATEGORIES.find(x=>x.name===name);const isN=def?def.necessary:true;
-    return `<div class="cat-row"><div class="cat-top"><span class="name"><span class="dot ${isN?'nec':'opt'}"></span>${esc(name)}</span><span class="amt">${fmt(amt)}</span></div><div class="cat-bar"><span style="width:${amt/maxCat*100}%;background:${isN?'var(--nec)':'var(--save)'}"></span></div></div>`;
-  }).join(""):'<p style="color:var(--ink-soft);font-size:14px;margin:0;">Add an entry and the breakdown shows up here.</p>';
+    return `<div class="cat-row"><div class="cat-top"><span class="name"><span class="dot ${isN?'nec':'opt'}"></span>${esc(catLabel(name))}</span><span class="amt">${fmt(amt)}</span></div><div class="cat-bar"><span style="width:${amt/maxCat*100}%;background:${isN?'var(--nec)':'var(--save)'}"></span></div></div>`;
+  }).join(""):`<p style="color:var(--ink-soft);font-size:14px;margin:0;">${tr("add_entry_breakdown")}</p>`;
 
   const insEl=document.getElementById("insight");
   if(ents.length===0)insEl.innerHTML="";
-  else if(over){insEl.className="insight over";insEl.innerHTML=`You're <b>${fmt(spent-budget)}</b> over budget on this account. Trimming flexible spending (${fmt(opt)}) is the quickest fix.`;}
-  else if(opt>0){insEl.className="insight";insEl.innerHTML=`<b>${fmt(opt)}</b> went to flexible spending — that's the money you could save. Necessary costs were <b>${fmt(nec)}</b>.`;}
-  else{insEl.className="insight good";insEl.innerHTML=`Everything logged was necessary so far${budget>0?` — <b>${fmt(Math.max(remaining,0))}</b> still unspent.`:"."}`;}
+  else if(over){insEl.className="insight over";insEl.innerHTML=tr("insight_over",fmt(spent-budget),fmt(opt));}
+  else if(opt>0){insEl.className="insight";insEl.innerHTML=tr("insight_save",fmt(opt),fmt(nec));}
+  else{insEl.className="insight good";insEl.innerHTML=tr("insight_good",budget>0?fmt(Math.max(remaining,0)):null);}
 
   /* entries */
   let arr=ents.slice();
@@ -761,7 +957,7 @@ function render(){
   document.querySelectorAll("#sort-panel [data-sort]").forEach(b=>b.classList.toggle("on",b.dataset.sort===entrySort));
   document.querySelectorAll("#show-nec [data-f]").forEach(b=>b.classList.toggle("on",b.dataset.f===entryFilter));
   const catWrap=document.getElementById("show-cat");
-  catWrap.innerHTML=`<button class="seg-pill${entryCatSel.length===0?" on":""}" data-c="all">All</button>`+CATEGORIES.map(c=>`<button class="seg-pill${entryCatSel.includes(c.name)?" on":""}" data-c="${esc(c.name)}">${esc(c.name)}</button>`).join("");
+  catWrap.innerHTML=`<button class="seg-pill${entryCatSel.length===0?" on":""}" data-c="all">${tr("all")}</button>`+CATEGORIES.map(c=>`<button class="seg-pill${entryCatSel.includes(c.name)?" on":""}" data-c="${esc(c.name)}">${esc(catLabel(c.name))}</button>`).join("");
   catWrap.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{
     if(b.dataset.c==="all")entryCatSel=[];
     else{const i=entryCatSel.indexOf(b.dataset.c);if(i>=0)entryCatSel.splice(i,1);else entryCatSel.push(b.dataset.c);}
@@ -769,12 +965,12 @@ function render(){
   });
   const list=document.getElementById("entry-list");
   if(arr.length===0){
-    list.innerHTML=`<div class="empty"><div class="big">Nothing here for ${monthLabel(currentMonth)} on ${esc(acct().name)}.</div>${isDefault?"Add an entry above to start tracking.":"Try a different option."}</div>`;
+    list.innerHTML=`<div class="empty"><div class="big">${tr("nothing_here",monthLabel(currentMonth),esc(acct().name))}</div>${isDefault?tr("add_entry_start"):tr("try_different")}</div>`;
   }else{
     const LIM=5;
     const shown=entryExpanded?arr:arr.slice(0,LIM);
     let html=shown.map(entryRowHtml).join("");
-    if(arr.length>LIM)html+=`<button class="see-all" id="see-all">${entryExpanded?"Show less":"See all ("+arr.length+")"}</button>`;
+    if(arr.length>LIM)html+=`<button class="see-all" id="see-all">${entryExpanded?tr("show_less"):tr("see_all",arr.length)}</button>`;
     list.innerHTML=html;
     bindEntryRows(list);
     const sa=document.getElementById("see-all");if(sa)sa.onclick=()=>{entryExpanded=!entryExpanded;render();};
@@ -784,9 +980,9 @@ function render(){
 }
 
 function entryRowHtml(e){
-  const ds=new Date(e.date+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  const ds=new Date(e.date+"T00:00:00").toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"short",day:"numeric"});
   const cls=e.partial?"part":(e.necessary?"nec":"opt");
-  const ttl=e.partial?"Partially necessary":(e.necessary?"Necessary":"Could save");
+  const ttl=e.partial?tr("partially_nec"):(e.necessary?tr("necessary"):tr("could_save"));
   const tip=[e.category,e.memo,e.fuel?fuelLine(e):"",e.partial?`Necessary ${fmt(split(e).nec)} · Could save ${fmt(split(e).opt)}`:""].filter(Boolean).join(" · ");
   return `<div class="entry" data-edit="${e.id}" title="${esc(tip)}">
     <span class="edot ${cls}" title="${ttl}"></span>
@@ -806,13 +1002,16 @@ function openIncomeList(){
   let spent=0;monthEntries().forEach(e=>{const s=split(e);spent+=s.nec+s.opt;});
   const net=total-spent;
   const rows=inc.length?inc.map(e=>{
-    const ds=new Date(e.date+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
-    return `<div class="recur-item"><div class="ri-main"><div class="ri-name">${esc(e.note||"Income")}</div><div class="ri-meta">${ds}</div></div><div class="ri-amt" style="color:var(--positive)">+${fmt(e.amount)}</div><button class="iconbtn" data-iedit="${e.id}" aria-label="Edit">✎</button><button class="iconbtn del" data-idel="${e.id}" aria-label="Delete">×</button></div>`;
-  }).join(""):'<p style="font-size:13px;color:var(--ink-soft);margin:0">No income logged for this month yet.</p>';
-  openModal(`<h3>Income — ${monthLabel(currentMonth)}</h3>
-    <p>${total>0?`${fmt(total)} in · after ${fmt(spent)} spent, ${net>=0?fmt(net)+" left":fmt(-net)+" over"}`:"For "+esc(acct().name)+"."}</p>
+    const ds=new Date(e.date+"T00:00:00").toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"short",day:"numeric"});
+    const incLabel=lang==="ko"?"수입":"Income";
+    return `<div class="recur-item"><div class="ri-main"><div class="ri-name">${esc(e.note||incLabel)}</div><div class="ri-meta">${ds}</div></div><div class="ri-amt" style="color:var(--positive)">+${fmt(e.amount)}</div><button class="iconbtn" data-iedit="${e.id}" aria-label="${tr("edit_btn")}">✎</button><button class="iconbtn del" data-idel="${e.id}" aria-label="${tr("del")}">×</button></div>`;
+  }).join(""):`<p style="font-size:13px;color:var(--ink-soft);margin:0">${lang==="ko"?"이번 달 수입이 없습니다.":"No income logged for this month yet."}</p>`;
+  const incHdr=lang==="ko"?`수입 — ${monthLabel(currentMonth)}`:`Income — ${monthLabel(currentMonth)}`;
+  const incSub=total>0?(lang==="ko"?`${fmt(total)} 수입 · ${fmt(spent)} 지출 후 ${net>=0?fmt(net)+" 남음":fmt(-net)+" 초과"}`:`${fmt(total)} in · after ${fmt(spent)} spent, ${net>=0?fmt(net)+" left":fmt(-net)+" over"}`):(lang==="ko"?`${esc(acct().name)} 계정`:"For "+esc(acct().name)+".");
+  openModal(`<h3>${incHdr}</h3>
+    <p>${incSub}</p>
     <div class="recur-list" style="margin-bottom:16px">${rows}</div>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Close</button><button class="primary" id="inc-add">＋ Add income</button></div>`);
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("close")}</button><button class="primary" id="inc-add">＋ ${tr("add_income")}</button></div>`);
   document.getElementById("inc-add").onclick=()=>openIncomeForm(null);
   document.querySelectorAll("[data-iedit]").forEach(b=>b.onclick=()=>openIncomeForm(b.dataset.iedit));
   document.querySelectorAll("[data-idel]").forEach(b=>b.onclick=async()=>{entries=entries.filter(x=>x.id!==b.dataset.idel);await saveEntries();render();openIncomeList();});
@@ -820,21 +1019,26 @@ function openIncomeList(){
 
 function openIncomeForm(id){
   const e=id?entries.find(x=>x.id===id):null;
-  openModal(`<h3>${e?"Edit":"Add"} income</h3>
-    <div class="field"><label for="i-amount">Amount</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="i-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${e?e.amount:""}"/></div></div>
-    <div class="field"><label for="i-note">Source</label><input type="text" id="i-note" placeholder="Where it came from" value="${e?esc(e.note||""):""}"/></div>
-    <div class="field"><label for="i-date">Date received</label><input type="date" id="i-date" value="${e?e.date:new Date().toISOString().slice(0,10)}"/></div>
-    <div class="modal-actions"><button class="ghost" id="i-back">Back</button><button class="primary" id="i-save">${e?"Save":"Add income"}</button></div>`);
+  const iHdr=e?(lang==="ko"?"수입 수정":"Edit income"):(lang==="ko"?"수입 추가":"Add income");
+  const iAmtLbl=lang==="ko"?"금액":"Amount";
+  const iSrcLbl=lang==="ko"?"출처":"Source";
+  const iSrcPh=lang==="ko"?"어디서 왔나요?":"Where it came from";
+  const iDateLbl=lang==="ko"?"받은 날짜":"Date received";
+  openModal(`<h3>${iHdr}</h3>
+    <div class="field"><label for="i-amount">${iAmtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="i-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${e?e.amount:""}"/></div></div>
+    <div class="field"><label for="i-note">${iSrcLbl}</label><input type="text" id="i-note" placeholder="${iSrcPh}" value="${e?esc(e.note||""):""}"/></div>
+    <div class="field"><label for="i-date">${iDateLbl}</label><input type="date" id="i-date" value="${e?e.date:new Date().toISOString().slice(0,10)}"/></div>
+    <div class="modal-actions"><button class="ghost" id="i-back">${tr("back")}</button><button class="primary" id="i-save">${e?tr("save"):tr("add_income")}</button></div>`);
   setTimeout(()=>document.getElementById("i-amount").focus(),50);
   document.getElementById("i-back").onclick=()=>openIncomeList();
   document.getElementById("i-save").onclick=async()=>{
     const amt=parseFloat(document.getElementById("i-amount").value);
-    if(!amt||amt<=0){toast("Enter an amount");return;}
+    if(!amt||amt<=0){toast(lang==="ko"?"금액을 입력하세요":"Enter an amount");return;}
     const date=document.getElementById("i-date").value||new Date().toISOString().slice(0,10);
     const note=document.getElementById("i-note").value.trim();
     if(e){e.amount=amt;e.note=note;e.date=date;}
     else{entries.push({id:uid(),accountId:meta.currentAccountId,type:"income",amount:amt,note,date,created:Date.now()});}
-    await saveEntries();render();openIncomeList();toast(e?"Updated":"Income added");
+    await saveEntries();render();openIncomeList();toast(e?(lang==="ko"?"수정되었습니다":"Updated"):(lang==="ko"?"수입이 추가되었습니다":"Income added"));
   };
 }
 
@@ -856,30 +1060,37 @@ function drawFuelView(){
   if(effRecs.length>=2){
     const vals=effRecs.map(r=>r.mpg);const mx=Math.max(...vals);
     const latest=round1(vals[vals.length-1]),best=round1(mx);
-    const bars=effRecs.map(r=>{const h=Math.max(8,Math.round(r.mpg/mx*100));const ds=new Date(r.date+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});return `<div class="eff-bar${r.mpg===mx?" best":""}" title="${ds}: ${round1(r.mpg)} ${el}"><span style="height:${h}%"></span></div>`;}).join("");
-    effBlock=`<div class="eff-card"><div class="eff-head"><span>Fuel efficiency (${el})</span><span class="eff-stats">latest ${latest} · best ${best} · avg ${avg}</span></div><div class="eff-bars">${bars}</div></div>`;
+    const bars=effRecs.map(r=>{const h=Math.max(8,Math.round(r.mpg/mx*100));const ds=new Date(r.date+"T00:00:00").toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"short",day:"numeric"});return `<div class="eff-bar${r.mpg===mx?" best":""}" title="${ds}: ${round1(r.mpg)} ${el}"><span style="height:${h}%"></span></div>`;}).join("");
+    const effHdr=lang==="ko"?`연비 (${el})`:`Fuel efficiency (${el})`;
+    const effStats=lang==="ko"?`최근 ${latest} · 최고 ${best} · 평균 ${avg}`:`latest ${latest} · best ${best} · avg ${avg}`;
+    effBlock=`<div class="eff-card"><div class="eff-head"><span>${effHdr}</span><span class="eff-stats">${effStats}</span></div><div class="eff-bars">${bars}</div></div>`;
   }
-  const sub=car?esc([car.makeModel,car.year,car.fuelType].filter(Boolean).join(" · ")||"Tap edit to add details"):"Add your car's details";
+  const sub=car?esc([car.makeModel,car.year,car.fuelType].filter(Boolean).join(" · ")||tr("car_tap_edit")):tr("car_add_details");
   const rows=recs.length?recs.map(e=>{
-    const ds=new Date(e.date+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    const ds=new Date(e.date+"T00:00:00").toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"short",day:"numeric",year:"numeric"});
     return `<div class="recur-item"><div class="ri-main"><div class="ri-name">${ds}</div><div class="ri-meta">${fuelLine(e)||"&mdash;"}</div></div><div class="ri-amt">${fmt(e.amount)}</div></div>`;
-  }).join(""):'<p style="font-size:13px;color:var(--ink-soft);margin:0">No fuel records for this period.</p>';
-  openModal(`<h3>Fuel — ${esc(acct().name)}</h3>
+  }).join(""):`<p style="font-size:13px;color:var(--ink-soft);margin:0">${lang==="ko"?"이 기간의 주유 기록이 없습니다.":"No fuel records for this period."}</p>`;
+  const noCarYet=lang==="ko"?"차량 정보 없음":"No car details yet";
+  const fillUpCnt=lang==="ko"?`${recs.length}회 주유 · 연료 ${fmt(totalSpend)}${avg!=null?` · 평균 ${avg} ${el}`:""}`:`${recs.length} fill-up${recs.length===1?"":"s"} · ${fmt(totalSpend)} on fuel${avg!=null?` · avg ${avg} ${el}`:""}`;
+  const noFuelYet=lang==="ko"?"주유 기록이 없습니다.":"No fuel records yet.";
+  const byMonthLbl=lang==="ko"?"월별":"By month";
+  const allTimeLbl=lang==="ko"?"전체":"All time";
+  openModal(`<h3>${lang==="ko"?"주유":"Fuel"} — ${esc(acct().name)}</h3>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;padding:11px 13px;border:1px solid var(--mist);border-radius:var(--radius-sm);background:var(--paper)">
-      <div style="min-width:0"><div style="font-weight:600;font-size:14px">🚗 ${car&&(car.name||car.makeModel)?esc(car.name||car.makeModel):"No car details yet"}</div><div style="font-size:12px;color:var(--ink-soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}</div></div>
-      <button class="mini-btn" id="edit-car" style="padding:0 14px;flex:none">${car?"Edit":"Add"}</button>
+      <div style="min-width:0"><div style="font-weight:600;font-size:14px">🚗 ${car&&(car.name||car.makeModel)?esc(car.name||car.makeModel):noCarYet}</div><div style="font-size:12px;color:var(--ink-soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}</div></div>
+      <button class="mini-btn" id="edit-car" style="padding:0 14px;flex:none">${car?tr("edit_btn"):tr("add")}</button>
     </div>
     <div class="fuel-scope">
-      <div class="seg"><button id="fs-month" class="${fuelViewAll?"":"on"}">By month</button><button id="fs-all" class="${fuelViewAll?"on":""}">All time</button></div>
+      <div class="seg"><button id="fs-month" class="${fuelViewAll?"":"on"}">${byMonthLbl}</button><button id="fs-all" class="${fuelViewAll?"on":""}">${allTimeLbl}</button></div>
       ${fuelViewAll?"":`<div class="fuel-mnav"><button id="fm-prev" aria-label="Previous month">‹</button><span class="lbl" id="fm-lbl" title="Pick a month" style="cursor:pointer">${monthLabel(fuelViewMonth)}</span><button id="fm-next" aria-label="Next month">›</button></div>`}
     </div>
-    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:12px">${recs.length?`${recs.length} fill-up${recs.length===1?"":"s"} · ${fmt(totalSpend)} on fuel${avg!=null?` · avg ${avg} ${el}`:""}`:"No fuel records yet."}</div>
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:12px">${recs.length?fillUpCnt:noFuelYet}</div>
     ${effBlock}
     <div class="recur-list" style="margin-bottom:12px">${rows}</div>
-    <button class="btn-secondary" id="add-fuel-entry" style="width:100%;margin-bottom:10px">＋ Add fuel entry</button>
-    <button class="btn-analyze" id="fuel-analyze" style="width:100%;justify-content:center"><span id="fuel-analyze-lbl">Get fuel advice</span></button>
+    <button class="btn-secondary" id="add-fuel-entry" style="width:100%;margin-bottom:10px">＋ ${lang==="ko"?"주유 기록 추가":"Add fuel entry"}</button>
+    <button class="btn-analyze" id="fuel-analyze" style="width:100%;justify-content:center"><span id="fuel-analyze-lbl">${tr("get_fuel_advice")}</span></button>
     <div id="fuel-analysis" style="font-size:14px;line-height:1.6;margin-top:14px"></div>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Close</button></div>`);
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("close")}</button></div>`);
   document.getElementById("edit-car").onclick=openCarForm;
   document.getElementById("add-fuel-entry").onclick=openFuelEntryForm;
   document.getElementById("fs-month").onclick=()=>{fuelViewAll=false;drawFuelView();};
@@ -895,14 +1106,15 @@ function openCarForm(){
   meta.car=meta.car||{};
   const car=meta.car[meta.currentAccountId]||{};
   const fuels=["Gasoline","Diesel","Hybrid","Electric","Other"];
-  openModal(`<h3>Car details</h3>
-    <div class="field"><label for="c-name">Nickname</label><input type="text" id="c-name" value="${esc(car.name||"")}" placeholder="e.g. The Honda"/></div>
-    <div class="field"><label for="c-mm">Make & model</label><div class="typeahead"><input type="text" id="c-mm" value="${esc(car.makeModel||"")}" placeholder="Search — e.g. Honda Civic" autocomplete="off"/><div class="typeahead-list" id="c-mm-list"></div></div></div>
+  const cHdr=lang==="ko"?"차량 정보":"Car details";
+  openModal(`<h3>${cHdr}</h3>
+    <div class="field"><label for="c-name">${lang==="ko"?"별명":"Nickname"}</label><input type="text" id="c-name" value="${esc(car.name||"")}" placeholder="${lang==="ko"?"예: 내 차":"e.g. The Honda"}"/></div>
+    <div class="field"><label for="c-mm">${lang==="ko"?"제조사 & 모델":"Make & model"}</label><div class="typeahead"><input type="text" id="c-mm" value="${esc(car.makeModel||"")}" placeholder="${lang==="ko"?"검색 — 예: Honda Civic":"Search — e.g. Honda Civic"}" autocomplete="off"/><div class="typeahead-list" id="c-mm-list"></div></div></div>
     <div class="row2">
-      <div class="field"><label for="c-year">Year</label><input type="number" id="c-year" value="${esc(car.year||"")}" placeholder="2019"/></div>
-      <div class="field"><label for="c-fuel">Fuel type</label><select id="c-fuel">${fuels.map(f=>`<option ${car.fuelType===f?"selected":""}>${f}</option>`).join("")}</select></div>
+      <div class="field"><label for="c-year">${lang==="ko"?"연식":"Year"}</label><input type="number" id="c-year" value="${esc(car.year||"")}" placeholder="2019"/></div>
+      <div class="field"><label for="c-fuel">${lang==="ko"?"연료 유형":"Fuel type"}</label><select id="c-fuel">${fuels.map(f=>`<option ${car.fuelType===f?"selected":""}>${f}</option>`).join("")}</select></div>
     </div>
-    <div class="modal-actions"><button class="ghost" id="c-back">Back</button><button class="primary" id="c-save">Save</button></div>`);
+    <div class="modal-actions"><button class="ghost" id="c-back">${tr("back")}</button><button class="primary" id="c-save">${tr("save")}</button></div>`);
   const mmInput=document.getElementById("c-mm"),mmList=document.getElementById("c-mm-list");
   const renderMM=()=>{
     const q=mmInput.value.trim().toLowerCase();
@@ -917,7 +1129,7 @@ function openCarForm(){
   document.getElementById("c-back").onclick=()=>drawFuelView();
   document.getElementById("c-save").onclick=async()=>{
     meta.car[meta.currentAccountId]={name:document.getElementById("c-name").value.trim(),makeModel:document.getElementById("c-mm").value.trim(),year:document.getElementById("c-year").value.trim(),fuelType:document.getElementById("c-fuel").value};
-    await saveMeta();drawFuelView();toast("Car saved");
+    await saveMeta();drawFuelView();toast(lang==="ko"?"차량 정보가 저장되었습니다":"Car saved");
   };
 }
 function openFuelEntryForm(){
@@ -925,15 +1137,15 @@ function openFuelEntryForm(){
   const def=(fuelViewAll?currentMonth:fuelViewMonth)||currentMonth;
   const today=new Date().toISOString().slice(0,10);
   const dval=today.startsWith(def)?today:def+"-01";
-  openModal(`<h3>Add fuel entry</h3>
-    <div class="field"><label for="nf-date">Date</label><input type="date" id="nf-date" value="${dval}"/></div>
-    <div class="field"><label for="nf-total">Total paid</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="nf-total" inputmode="decimal" step="any" min="0" style="padding-left:32px;font-weight:600" placeholder="0"/></div></div>
-    <div class="field"><label>Fuel details</label>
-      <div class="toggle unit-toggle" style="grid-template-columns:1fr 1fr;margin-bottom:8px"><button type="button" id="nf-gal" aria-pressed="true">Gallons</button><button type="button" id="nf-l" aria-pressed="false">Liters</button></div>
-      <div class="row2"><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="nf-price" inputmode="decimal" step="any" min="0" style="padding-left:32px" placeholder="Price per gallon"/></div><input type="number" id="nf-miles" inputmode="decimal" step="any" min="0" placeholder="Miles driven"/></div>
+  openModal(`<h3>${lang==="ko"?"주유 기록 추가":"Add fuel entry"}</h3>
+    <div class="field"><label for="nf-date">${tr("date")}</label><input type="date" id="nf-date" value="${dval}"/></div>
+    <div class="field"><label for="nf-total">${lang==="ko"?"총 결제 금액":"Total paid"}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="nf-total" inputmode="decimal" step="any" min="0" style="padding-left:32px;font-weight:600" placeholder="0"/></div></div>
+    <div class="field"><label>${tr("fuel_details")}</label>
+      <div class="toggle unit-toggle" style="grid-template-columns:1fr 1fr;margin-bottom:8px"><button type="button" id="nf-gal" aria-pressed="true">${tr("gallons")}</button><button type="button" id="nf-l" aria-pressed="false">${tr("liters")}</button></div>
+      <div class="row2"><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="nf-price" inputmode="decimal" step="any" min="0" style="padding-left:32px" placeholder="${tr("price_per_gallon")}"/></div><input type="number" id="nf-miles" inputmode="decimal" step="any" min="0" placeholder="${tr("miles_driven")}"/></div>
       <div class="partial-hint" id="nf-hint" style="color:var(--ink-soft);margin-top:7px"></div>
     </div>
-    <div class="modal-actions"><button class="ghost" id="nf-back">Back</button><button class="primary" id="nf-save">Add entry</button></div>`);
+    <div class="modal-actions"><button class="ghost" id="nf-back">${tr("back")}</button><button class="primary" id="nf-save">${lang==="ko"?"추가":"Add entry"}</button></div>`);
   const vl=()=>u==="gal"?"gal":"L",elb=()=>u==="gal"?"mpg":"km/L";
   const upd=()=>{
     const total=parseFloat(document.getElementById("nf-total").value)||0;
@@ -949,97 +1161,101 @@ function openFuelEntryForm(){
   document.getElementById("nf-back").onclick=()=>drawFuelView();
   document.getElementById("nf-save").onclick=async()=>{
     const total=parseFloat(document.getElementById("nf-total").value);
-    if(!total||total<=0){toast("Enter the total paid");return;}
+    if(!total||total<=0){toast(lang==="ko"?"총 결제 금액을 입력하세요":"Enter the total paid");return;}
     const date=document.getElementById("nf-date").value||new Date().toISOString().slice(0,10);
     const price=parseFloat(document.getElementById("nf-price").value)||0;
     const miles=parseFloat(document.getElementById("nf-miles").value)||0;
-    const entry={id:uid(),accountId:meta.currentAccountId,type:"expense",amount:total,note:"Fuel",category:"Fuel / Gas",date,necessary:true,partial:false,memo:"",hasPhoto:false,created:Date.now()};
+    const entry={id:uid(),accountId:meta.currentAccountId,type:"expense",amount:total,note:lang==="ko"?"주유":"Fuel",category:"Fuel / Gas",date,necessary:true,partial:false,memo:"",hasPhoto:false,created:Date.now()};
     if(price>0||miles>0)entry.fuel={unit:u,price,distance:miles};
     entries.push(entry);await saveEntries();
     if(!fuelViewAll)fuelViewMonth=date.slice(0,7);
-    render();drawFuelView();toast("Fuel entry added");
+    render();drawFuelView();toast(lang==="ko"?"주유 기록이 추가되었습니다":"Fuel entry added");
   };
 }
 async function analyzeFuel(recs){
   const body=document.getElementById("fuel-analysis"),btn=document.getElementById("fuel-analyze");
-  if(recs.length===0){body.innerHTML='<span style="color:var(--ink-soft)">Add some fuel records first.</span>';return;}
-  btn.disabled=true;document.getElementById("fuel-analyze-lbl").innerHTML='<span class="spinner"></span> Analyzing…';
-  body.innerHTML='<span style="color:var(--ink-soft)">Looking at your fill-ups…</span>';
+  if(recs.length===0){body.innerHTML=`<span style="color:var(--ink-soft)">${tr("no_fuel_records")}</span>`;return;}
+  btn.disabled=true;document.getElementById("fuel-analyze-lbl").innerHTML=`<span class="spinner"></span> ${tr("analyzing_fuel_lbl")}`;
+  body.innerHTML=`<span style="color:var(--ink-soft)">${tr("looking_at_fillups")}</span>`;
   const lines=recs.map(e=>{const f=e.fuel;const vol=(f.price>0&&e.amount>0)?round1(e.amount/f.price):null;const mpg=(vol&&f.distance>0)?round1(f.distance/vol):null;const u=f.unit==="gal"?"gal":"L";const du=f.unit==="gal"?"mi":"km";const eu=f.unit==="gal"?"mpg":"km/L";return `${e.date} | total ${fmt(e.amount)} | ${fmt(f.price)}/${u}${vol?` | ${vol} ${u}`:""}${f.distance?` | ${f.distance} ${du}`:""}${mpg?` | ${mpg} ${eu}`:""}`;}).join("\n");
-  const prompt=`You are a helpful assistant reviewing fuel purchases for a household car, in ${CUR_NAMES[meta.currency]||meta.currency}. Records:\n${lines}\n\nWrite a short, friendly summary (about 110 words, plain text, no headings or bullet symbols): total fuel spend, the average fuel efficiency and whether it seems to be trending up or down, and 2 practical tips to spend less on fuel or improve efficiency. Use the real numbers.`;
+  const prompt=`You are a helpful assistant reviewing fuel purchases for a household car, in ${CUR_NAMES[meta.currency]||meta.currency}. Records:\n${lines}\n\nWrite a short, friendly summary (about 110 words, plain text, no headings or bullet symbols): total fuel spend, the average fuel efficiency and whether it seems to be trending up or down, and 2 practical tips to spend less on fuel or improve efficiency. Use the real numbers. Respond in ${lang==="ko"?"Korean":"English"}.`;
   try{const txt=await callClaude(prompt);body.innerHTML="<p>"+esc(txt).replace(/\n{2,}/g,"</p><p>").replace(/\n/g,"<br>")+"</p>";}
-  catch(e){body.innerHTML='<span style="color:var(--ink-soft)">Couldn\u2019t analyze just now. Try again in a moment.</span>';}
-  finally{btn.disabled=false;document.getElementById("fuel-analyze-lbl").textContent="Get fuel advice";}
+  catch(e){body.innerHTML=`<span style="color:var(--ink-soft)">${tr("couldnt_fuel")}</span>`;}
+  finally{btn.disabled=false;document.getElementById("fuel-analyze-lbl").textContent=tr("get_fuel_advice");}
 }
 
 async function openFullSettings(){
-  const accRows=meta.accounts.map(a=>`<div class="arow"><input type="text" value="${esc(a.name)}" data-id="${a.id}"/>${meta.accounts.length>1?`<button data-del="${a.id}">Delete</button>`:""}</div>`).join("");
+  const accRows=meta.accounts.map(a=>`<div class="arow"><input type="text" value="${esc(a.name)}" data-id="${a.id}"/>${meta.accounts.length>1?`<button data-del="${a.id}">${tr("del")}</button>`:""}</div>`).join("");
   let inviteCode="";
   try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
   const user=window.__TN_USER__||{};
   const curCur=meta.currency||"USD";
   openModal(
-    `<h3 style="margin:0 0 22px">Settings</h3>`+
+    `<h3 style="margin:0 0 22px">${tr("settings")}</h3>`+
 
     `<div class="set-sec">`+
-    `<div class="set-sec-head">Manage accounts</div>`+
-    `<div class="field"><label for="s-name">Household name</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="Our Home"/></div>`+
-    `<div class="field"><label>Accounts</label><div class="acct-manage" id="s-acct">${accRows}</div></div>`+
-    `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="New account name"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">Add</button></div></div>`+
-    `<button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center;margin-bottom:${inviteCode?10:0}px">${acct().lock?"🔒 "+esc(acct().name)+" — manage password":"Lock "+esc(acct().name)+" with a password"}</button>`+
+    `<div class="set-sec-head">${tr("manage_accounts")}</div>`+
+    `<div class="field"><label for="s-name">${tr("household_name_label")}</label><div style="display:flex;gap:8px"><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/><button class="mini-btn" id="s-savehh" style="padding:0 14px">${tr("save")}</button></div></div>`+
+    `<div class="field"><label>${tr("accounts_label")}</label><div class="acct-manage" id="s-acct">${accRows}</div></div>`+
+    `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
+    `<button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center;margin-bottom:${inviteCode?10:0}px">${acct().lock?tr("manage_password",esc(acct().name)):tr("lock_account",esc(acct().name))}</button>`+
     (inviteCode
-      ?`<div class="set-invite"><div class="set-invite-label">Invite your partner</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">Copy</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">Share this code so your partner can join at sign-up.</div></div>`
+      ?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`
       :"")+
     `</div>`+
 
     `<div class="set-sec">`+
-    `<div class="set-sec-head">User information</div>`+
-    `<div class="field"><label>Display name</label><div style="display:flex;gap:8px"><input type="text" id="s-dispname" value="${esc(user.name||"")}"/><button class="mini-btn" id="s-savename" style="padding:0 14px">Save</button></div></div>`+
-    `<div class="field"><label>Email</label><div style="font-size:14px;color:var(--ink-soft);padding:9px 0">${esc(user.email||"—")}</div></div>`+
-    `<button class="btn-secondary" id="s-chpw" style="width:100%;justify-content:center">Change password</button>`+
+    `<div class="set-sec-head">${tr("user_info")}</div>`+
+    `<div class="field"><label>${tr("display_name")}</label><div style="display:flex;gap:8px"><input type="text" id="s-dispname" value="${esc(user.name||"")}"/><button class="mini-btn" id="s-savename" style="padding:0 14px">${tr("save_name")}</button></div></div>`+
+    `<div class="field"><label>${tr("email_label")}</label><div style="font-size:14px;color:var(--ink-soft);padding:9px 0">${esc(user.email||"—")}</div></div>`+
+    `<button class="btn-secondary" id="s-chpw" style="width:100%;justify-content:center">${tr("change_password")}</button>`+
     `</div>`+
 
     `<div class="set-sec">`+
-    `<div class="set-sec-head">General</div>`+
-    `<div class="field"><label>Color theme</label><div id="s-theme-cards" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>`+
-    `<div class="field" style="margin-bottom:0"><label>Currency</label><button class="btn-secondary" id="s-cur" style="width:100%;justify-content:center;margin-top:4px">Change currency (${esc(curCur)})</button></div>`+
+    `<div class="set-sec-head">${tr("general")}</div>`+
+    `<div class="field"><label>${tr("color_theme")}</label><div id="s-theme-cards" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>`+
+    `<div class="field"><label>${tr("language")}</label><div style="display:flex;gap:8px;margin-top:6px"><button class="pill" id="s-lang-en" aria-pressed="${lang==="en"}">${tr("lang_en")}</button><button class="pill" id="s-lang-ko" aria-pressed="${lang==="ko"}">${tr("lang_ko")}</button></div></div>`+
+    `<div class="field" style="margin-bottom:0"><label>${tr("currency_label")}</label><button class="btn-secondary" id="s-cur" style="width:100%;justify-content:center;margin-top:4px">${tr("change_currency",esc(curCur))}</button></div>`+
     `</div>`+
 
-    `<button id="s-signout" class="set-signout">Sign out</button>`+
-    `<div class="modal-actions" style="margin-top:14px"><button class="ghost" onclick="closeModal()">Close</button></div>`
+    `<button id="s-signout" class="set-signout">${tr("sign_out")}</button>`+
+    `<div class="modal-actions" style="margin-top:14px"><button class="ghost" onclick="closeModal()">${tr("close")}</button></div>`
   );
 
   renderThemeCards("s-theme-cards");
 
   const nm=document.getElementById("s-name");
-  nm.addEventListener("input",()=>{meta.name=nm.value;document.getElementById("acct-sub").textContent=(nm.value.trim()?nm.value.trim()+" · ":"")+("Viewing "+acct().name);});
-  nm.addEventListener("change",saveMeta);
+  nm.addEventListener("input",()=>{meta.name=nm.value;document.getElementById("acct-sub").textContent=(nm.value.trim()?nm.value.trim()+" · ":"")+tr("viewing",acct().name);});
+  document.getElementById("s-savehh").onclick=async()=>{meta.name=nm.value.trim();await saveMeta();render();toast(tr("name_updated"));};
   document.querySelectorAll("#s-acct input").forEach(inp=>inp.onchange=()=>{const a=meta.accounts.find(x=>x.id===inp.dataset.id);if(a){a.name=inp.value.trim()||a.name;saveMeta();render();}});
   document.querySelectorAll("#s-acct button[data-del]").forEach(b=>b.onclick=()=>deleteAccount(b.dataset.del));
   document.getElementById("s-lock").onclick=openLockForm;
-  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||"New account";const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openFullSettings();};
-  if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast("Invite code copied!")).catch(()=>toast(inviteCode));};};
+  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openFullSettings();};
+  if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};};
+
+  document.getElementById("s-lang-en").onclick=()=>setLang("en");
+  document.getElementById("s-lang-ko").onclick=()=>setLang("ko");
 
   document.getElementById("s-savename").onclick=async()=>{
     const v=document.getElementById("s-dispname").value.trim();
     if(!v)return;
     const r=await fetch("/api/user",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({field:"name",value:v})});
-    if(r.ok){if(window.__TN_USER__)window.__TN_USER__.name=v;const sp=document.querySelector(".tn-username");if(sp)sp.textContent=v;toast("Name updated");}
-    else toast("Couldn't update name");
+    if(r.ok){if(window.__TN_USER__)window.__TN_USER__.name=v;const sp=document.querySelector(".tn-username");if(sp)sp.textContent=v;toast(tr("name_updated"));}
+    else toast(tr("couldnt_update_name"));
   };
 
   document.getElementById("s-chpw").onclick=()=>{
     openModal(
-      `<h3>Change password</h3>`+
-      `<div class="field"><label>New password</label><input type="password" id="s-newpw" placeholder="At least 6 characters" minlength="6"/></div>`+
-      `<div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="s-savepw">Save password</button></div>`
+      `<h3>${tr("change_password")}</h3>`+
+      `<div class="field"><label>${tr("new_pw")}</label><input type="password" id="s-newpw" placeholder="${tr("pw_placeholder")}" minlength="6"/></div>`+
+      `<div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="s-savepw">${tr("save_password")}</button></div>`
     );
     document.getElementById("s-savepw").onclick=async()=>{
       const v=document.getElementById("s-newpw").value;
-      if(v.length<6){toast("At least 6 characters");return;}
+      if(v.length<6){toast(tr("at_least_6"));return;}
       const r=await fetch("/api/user",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({field:"password",value:v})});
-      if(r.ok){closeModal();toast("Password updated");}
-      else{try{const d=await r.json();toast(d.error||"Couldn't update password");}catch{toast("Couldn't update password");}}
+      if(r.ok){closeModal();toast(tr("pw_updated"));}
+      else{try{const d=await r.json();toast(d.error||tr("couldnt_update_pw"));}catch{toast(tr("couldnt_update_pw"));}}
     };
     setTimeout(()=>document.getElementById("s-newpw").focus(),60);
   };
@@ -1054,11 +1270,11 @@ async function openFullSettings(){
 function renderRecurring(){
   const list=document.getElementById("recur-list");
   const items=(meta.recurring||[]).filter(t=>t.accountId===meta.currentAccountId);
-  if(items.length===0){list.innerHTML='<p style="font-size:13px;color:var(--ink-soft);margin:0;">No recurring items yet for '+esc(acct().name)+'.</p>';return;}
+  if(items.length===0){list.innerHTML=`<p style="font-size:13px;color:var(--ink-soft);margin:0;">${tr("recurring_none",esc(acct().name))}</p>`;return;}
   list.innerHTML=items.map(t=>{
     const ends=t.endDate?(" · ends "+t.endDate):"";
-    const tagTxt=t.necessary?"Necessary":"Could save";
-    return `<div class="recur-item"><div class="ri-main"><div class="ri-name">${esc(t.name)}</div><div class="ri-meta">${esc(t.category)} · ${tagTxt} · billed day ${t.billingDay||1}${ends}</div></div><div class="ri-amt">${fmt(t.amount)}</div><button class="iconbtn" data-edit="${t.id}" aria-label="Edit">✎</button><button class="iconbtn del" data-del="${t.id}" aria-label="Delete">×</button></div>`;
+    const tagTxt=t.necessary?tr("necessary"):tr("could_save");
+    return `<div class="recur-item"><div class="ri-main"><div class="ri-name">${esc(t.name)}</div><div class="ri-meta">${esc(catLabel(t.category))} · ${tagTxt} · ${tr("billed_day",t.billingDay||1)}${ends}</div></div><div class="ri-amt">${fmt(t.amount)}</div><button class="iconbtn" data-edit="${t.id}" aria-label="${tr("edit_btn")}">✎</button><button class="iconbtn del" data-del="${t.id}" aria-label="${tr("del")}">×</button></div>`;
   }).join("");
   list.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openRecurModal(b.dataset.edit));
   list.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteRecur(b.dataset.del));
@@ -1084,8 +1300,8 @@ function toggleFuel(catName){
   if(show){updateFuelLabels();computeFuel();}else clearFuel();
 }
 function updateFuelLabels(){
-  document.getElementById("fuel-price").placeholder="Price per "+(fuelUnit==="gal"?"gallon":"liter");
-  document.getElementById("fuel-miles").placeholder=(fuelUnit==="gal"?"Miles":"Km")+" driven";
+  document.getElementById("fuel-price").placeholder=tr(fuelUnit==="gal"?"price_per_gallon":"price_per_liter");
+  document.getElementById("fuel-miles").placeholder=tr(fuelUnit==="gal"?"miles_driven":"km_driven");
 }
 function setFuelUnit(u){
   fuelUnit=u;
@@ -1115,7 +1331,7 @@ function updatePartialHint(){
   const total=parseFloat(document.getElementById("amount").value)||0;
   let necp=parseFloat(document.getElementById("partial-nec").value);
   if(isNaN(necp))necp=0;necp=Math.max(0,Math.min(necp,total));
-  document.getElementById("partial-hint").textContent="Could save: "+fmt(total-necp)+" of "+fmt(total);
+  document.getElementById("partial-hint").textContent=tr("partial_hint",fmt(total-necp),fmt(total));
 }
 async function addEntry(){
   const amount=parseFloat(document.getElementById("amount").value);
@@ -1133,7 +1349,7 @@ async function addEntry(){
   if(pendingPhoto){try{await store.set(PKEY(id),pendingPhoto.base64,SHARED);}catch(e){entry.hasPhoto=false;}}
   await saveEntries();
   const em=entry.date.slice(0,7);if(em!==currentMonth)currentMonth=em;
-  clearForm();render();toast("Added");document.getElementById("amount").focus();
+  clearForm();render();toast(lang==="ko"?"추가되었습니다":"Added");document.getElementById("amount").focus();
 }
 function clearForm(){
   document.getElementById("amount").value="";document.getElementById("note").value="";
@@ -1149,33 +1365,35 @@ async function delEntry(id){
   if(e&&e.recurringId){if(!meta.recurSkips)meta.recurSkips={};meta.recurSkips[e.accountId+":"+e.date.slice(0,7)+":"+e.recurringId]=true;await saveMeta();}
   await saveEntries();
   if(e&&e.hasPhoto){try{await store.delete(PKEY(id),SHARED);}catch(err){}}
-  render();toast("Removed");
+  render();toast(lang==="ko"?"삭제되었습니다":"Removed");
 }
 function openEditEntry(id){
   const e=entries.find(x=>x.id===id);if(!e)return;
   let mode=e.partial?"partial":(e.necessary?"nec":"opt");
-  const catOpts=CATEGORIES.map(c=>`<option value="${esc(c.name)}"${c.name===e.category?" selected":""}>${esc(c.name)}</option>`).join("");
-  openModal(`<h3>Edit entry</h3>
-    <div class="field"><label for="e-amount">Amount</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${e.amount}"/></div></div>
-    <div class="field"><label for="e-note">What for?</label><input type="text" id="e-note" value="${esc(e.note||"")}"/></div>
-    <div class="row2"><div class="field"><label for="e-cat">Category</label><select id="e-cat">${catOpts}</select></div><div class="field"><label for="e-date">Date</label><input type="date" id="e-date" value="${e.date}"/></div></div>
+  const catOpts=CATEGORIES.map(c=>`<option value="${esc(c.name)}"${c.name===e.category?" selected":""}>${esc(catLabel(c.name))}</option>`).join("");
+  const eFuelPPh=tr(fuelUnit==="gal"?"price_per_gallon":"price_per_liter");
+  const eFuelMPh=tr(fuelUnit==="gal"?"miles_driven":"km_driven");
+  openModal(`<h3>${lang==="ko"?"항목 수정":"Edit entry"}</h3>
+    <div class="field"><label for="e-amount">${tr("amount")}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${e.amount}"/></div></div>
+    <div class="field"><label for="e-note">${tr("what_for")}</label><input type="text" id="e-note" value="${esc(e.note||"")}"/></div>
+    <div class="row2"><div class="field"><label for="e-cat">${tr("category")}</label><select id="e-cat">${catOpts}</select></div><div class="field"><label for="e-date">${tr("date")}</label><input type="date" id="e-date" value="${e.date}"/></div></div>
     <div class="field" id="e-fuel-field" style="display:${e.category==='Fuel / Gas'?'block':'none'}">
-      <label>Fuel details — amount above is the total paid</label>
-      <div class="toggle unit-toggle" style="grid-template-columns:1fr 1fr;margin-bottom:8px"><button type="button" id="e-unit-g">Gallons</button><button type="button" id="e-unit-l">Liters</button></div>
-      <div class="row2"><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-fuel-price" step="any" min="0" placeholder="Price per gallon" style="padding-left:32px" value="${e.fuel?e.fuel.price:''}"/></div><input type="number" id="e-fuel-miles" step="any" min="0" placeholder="Miles driven" value="${e.fuel?(e.fuel.distance||''):''}"/></div>
+      <label>${tr("fuel_details")}</label>
+      <div class="toggle unit-toggle" style="grid-template-columns:1fr 1fr;margin-bottom:8px"><button type="button" id="e-unit-g">${tr("gallons")}</button><button type="button" id="e-unit-l">${tr("liters")}</button></div>
+      <div class="row2"><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-fuel-price" step="any" min="0" placeholder="${eFuelPPh}" style="padding-left:32px" value="${e.fuel?e.fuel.price:''}"/></div><input type="number" id="e-fuel-miles" step="any" min="0" placeholder="${eFuelMPh}" value="${e.fuel?(e.fuel.distance||''):''}"/></div>
     </div>
-    <div class="field"><label>How should this count?</label>
+    <div class="field"><label>${tr("how_count")}</label>
       <div class="toggle toggle-3">
-        <button type="button" class="t-nec" id="e-nec"><span class="d"></span>Necessary</button>
-        <button type="button" class="t-opt" id="e-opt"><span class="d"></span>Could save</button>
-        <button type="button" class="t-part" id="e-part"><span class="d"></span>Partially</button>
+        <button type="button" class="t-nec" id="e-nec"><span class="d"></span>${tr("necessary")}</button>
+        <button type="button" class="t-opt" id="e-opt"><span class="d"></span>${tr("could_save")}</button>
+        <button type="button" class="t-part" id="e-part"><span class="d"></span>${tr("partially")}</button>
       </div>
-      <div class="partial-row" id="e-partial-row"><label for="e-partial-nec" style="font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;display:block;">How much is necessary?</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-partial-nec" step="any" min="0" value="${e.partial?(e.necAmount||0):""}"/></div><div class="partial-hint" id="e-partial-hint"></div></div>
+      <div class="partial-row" id="e-partial-row"><label for="e-partial-nec" style="font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;display:block;">${tr("how_much_nec")}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-partial-nec" step="any" min="0" value="${e.partial?(e.necAmount||0):""}"/></div><div class="partial-hint" id="e-partial-hint"></div></div>
     </div>
-    <div class="field"><label for="e-memo">Memo</label><textarea id="e-memo">${esc(e.memo||"")}</textarea></div>
-    <div class="field"><label>Receipt</label><input type="file" id="e-file" accept="image/*" hidden /><div id="e-receipt"></div><div class="scan-status" id="e-scan-status"></div></div>
-    <div class="modal-actions"><button class="ghost danger" id="e-del">Delete</button><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="e-save">Save changes</button></div>`);
-  const eHint=()=>{const t=parseFloat(document.getElementById("e-amount").value)||0;let n=parseFloat(document.getElementById("e-partial-nec").value)||0;n=Math.max(0,Math.min(n,t));document.getElementById("e-partial-hint").textContent="Could save: "+fmt(t-n)+" of "+fmt(t);};
+    <div class="field"><label for="e-memo">${tr("memo_label")}</label><textarea id="e-memo">${esc(e.memo||"")}</textarea></div>
+    <div class="field"><label>${tr("receipt_label")}</label><input type="file" id="e-file" accept="image/*" hidden /><div id="e-receipt"></div><div class="scan-status" id="e-scan-status"></div></div>
+    <div class="modal-actions"><button class="ghost danger" id="e-del">${tr("del")}</button><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="e-save">${tr("save")}</button></div>`);
+  const eHint=()=>{const t=parseFloat(document.getElementById("e-amount").value)||0;let n=parseFloat(document.getElementById("e-partial-nec").value)||0;n=Math.max(0,Math.min(n,t));document.getElementById("e-partial-hint").textContent=tr("partial_hint",fmt(t-n),fmt(t));};
   const setEM=m=>{mode=m;
     document.getElementById("e-nec").setAttribute("aria-pressed",m==="nec");
     document.getElementById("e-opt").setAttribute("aria-pressed",m==="opt");
@@ -1197,9 +1415,9 @@ function openEditEntry(id){
   const scanEditReceipt=async()=>{
     if(!pendingEditPhoto)return;
     const status=document.getElementById("e-scan-status");
-    status.className="scan-status show";status.innerHTML='<span class="spinner"></span> Reading the receipt…';
+    status.className="scan-status show";status.innerHTML=`<span class="spinner"></span> ${tr("scan_reading")}`;
     const cats=CATEGORIES.map(c=>c.name).join(", ");
-    const instr=`You are reading a receipt photo. It may be in any language — Korean, English, or anything else. Read it regardless of language and respond with ONLY a JSON object, no markdown. Schema: {"amount": number (grand total), "merchant": string (store name), "date": "YYYY-MM-DD" or null, "category": one of: ${cats}, "necessary": boolean, "summary": one short sentence in English}. If a field is unreadable use null.`;
+    const instr=`You are reading a receipt photo. It may be in any language — Korean, English, or anything else. Read it regardless of language and respond with ONLY a JSON object, no markdown. Schema: {"amount": number (grand total), "merchant": string (store name), "date": "YYYY-MM-DD" or null, "category": one of: ${cats}, "necessary": boolean, "summary": one short sentence in ${lang==="ko"?"Korean":"English"}}. If a field is unreadable use null.`;
     try{
       const txt=await callClaude([{type:"image",source:{type:"base64",media_type:pendingEditPhoto.media,data:pendingEditPhoto.base64}},{type:"text",text:instr}]);
       const data=JSON.parse(txt.replace(/^```[^\n]*\n?|```$/gm,"").trim());
@@ -1209,21 +1427,27 @@ function openEditEntry(id){
       if(data.category){const sel=document.getElementById("e-cat");const o=[...sel.options].find(x=>x.value===data.category);if(o){sel.value=data.category;document.getElementById("e-fuel-field").style.display=data.category==="Fuel / Gas"?"block":"none";}}
       if(typeof data.necessary==="boolean")setEM(data.necessary?"nec":"opt");
       if(data.summary&&!document.getElementById("e-memo").value)document.getElementById("e-memo").value=data.summary;
-      status.className="scan-status show ok";status.textContent="Filled from the receipt — check and adjust.";
-    }catch(err){status.className="scan-status show err";status.textContent="Couldn't read it automatically — fill in manually. The photo stays attached.";}
+      status.className="scan-status show ok";status.textContent=tr("scan_ok");
+    }catch(err){status.className="scan-status show err";status.textContent=lang==="ko"?"자동으로 읽지 못했습니다. 직접 입력하세요.":"Couldn't read it automatically — fill in manually. The photo stays attached.";}
   };
+  const newReceiptLbl=lang==="ko"?"새 영수증":"New receipt";
+  const saveWhenLbl=lang==="ko"?"저장을 누르면 저장됩니다":"Saved when you tap Save";
+  const removeLbl=lang==="ko"?"제거":"Remove";
+  const viewLbl=lang==="ko"?"영수증 보기":"View receipt";
+  const replaceLbl=lang==="ko"?"교체":"Replace";
+  const attachLbl=lang==="ko"?"영수증 첨부":"Attach a receipt";
   const drawEReceipt=()=>{
     const box=document.getElementById("e-receipt");
     if(pendingEditPhoto){
-      box.innerHTML=`<div class="receipt-prev"><img src="${pendingEditPhoto.dataUrl}" alt="receipt"/><div class="meta"><div>New receipt</div><div class="s">Saved when you tap Save changes</div></div><button class="mini-btn" type="button" id="e-rm">Remove</button></div>`;
+      box.innerHTML=`<div class="receipt-prev"><img src="${pendingEditPhoto.dataUrl}" alt="receipt"/><div class="meta"><div>${newReceiptLbl}</div><div class="s">${saveWhenLbl}</div></div><button class="mini-btn" type="button" id="e-rm">${removeLbl}</button></div>`;
       document.getElementById("e-rm").onclick=()=>{pendingEditPhoto=null;drawEReceipt();};
     }else if(pendingEditPhoto!==null&&e.hasPhoto){
-      box.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="mini-btn" type="button" id="e-view">View receipt</button><button class="mini-btn" type="button" id="e-replace">Replace</button><button class="mini-btn" type="button" id="e-rm">Remove</button></div>`;
+      box.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="mini-btn" type="button" id="e-view">${viewLbl}</button><button class="mini-btn" type="button" id="e-replace">${replaceLbl}</button><button class="mini-btn" type="button" id="e-rm">${removeLbl}</button></div>`;
       document.getElementById("e-view").onclick=()=>viewPhoto(e.id);
       document.getElementById("e-replace").onclick=()=>document.getElementById("e-file").click();
       document.getElementById("e-rm").onclick=()=>{pendingEditPhoto=null;drawEReceipt();};
     }else{
-      box.innerHTML=`<div class="receipt-drop" id="e-drop"><span>＋</span> Attach a receipt</div>`;
+      box.innerHTML=`<div class="receipt-drop" id="e-drop"><span>＋</span> ${attachLbl}</div>`;
       document.getElementById("e-drop").onclick=()=>document.getElementById("e-file").click();
     }
   };
@@ -1235,7 +1459,7 @@ function openEditEntry(id){
   document.getElementById("e-del").onclick=async()=>{await delEntry(e.id);closeModal();};
   document.getElementById("e-save").onclick=async()=>{
     const amt=parseFloat(document.getElementById("e-amount").value);
-    if(!amt||amt<=0){toast("Enter an amount");return;}
+    if(!amt||amt<=0){toast(lang==="ko"?"금액을 입력하세요":"Enter an amount");return;}
     e.amount=amt;e.note=document.getElementById("e-note").value.trim();
     e.category=document.getElementById("e-cat").value;e.date=document.getElementById("e-date").value||e.date;
     e.memo=document.getElementById("e-memo").value.trim();
@@ -1245,7 +1469,7 @@ function openEditEntry(id){
     if(pendingEditPhoto){try{await store.set(PKEY(e.id),pendingEditPhoto.base64,SHARED);e.hasPhoto=true;}catch(err){}}
     else if(pendingEditPhoto===null){try{await store.delete(PKEY(e.id),SHARED);}catch(err){}e.hasPhoto=false;}
     await saveEntries();const em=e.date.slice(0,7);if(em!==currentMonth)currentMonth=em;
-    closeModal();render();toast("Updated");
+    closeModal();render();toast(lang==="ko"?"수정되었습니다":"Updated");
   };
 }
 
@@ -1256,13 +1480,13 @@ async function recommendNecessity(){
   const amount=document.getElementById("amount").value;
   const memo=document.getElementById("memo").value.trim();
   const rn=document.getElementById("rec-note");
-  rn.className="rec-note show";rn.innerHTML='<span class="spinner" style="width:12px;height:12px"></span> Thinking…';
-  const prompt=`Classify this household expense as either a necessity or discretionary ("could save"). Item: ${note||"(none given)"}. Category: ${category}. Amount: ${amount||"(unknown)"} ${meta.currency}. Note: ${memo||"(none)"}. Respond with ONLY a JSON object, no markdown: {"necessary": <true or false>, "reason": "<6 to 12 words>"}.`;
+  rn.className="rec-note show";rn.innerHTML=`<span class="spinner" style="width:12px;height:12px"></span> ${tr("thinking")}`;
+  const prompt=`Classify this household expense as either a necessity or discretionary ("could save"). Item: ${note||"(none given)"}. Category: ${category}. Amount: ${amount||"(unknown)"} ${meta.currency}. Note: ${memo||"(none)"}. Respond with ONLY a JSON object, no markdown: {"necessary": <true or false>, "reason": "<6 to 12 words in ${lang==="ko"?"Korean":"English"}>"}. `;
   try{
     const txt=await callClaude(prompt);const data=JSON.parse(txt.replace(/```json|```/g,"").trim());
     setMode(data.necessary?"nec":"opt");
-    rn.className="rec-note show";rn.innerHTML=`Suggested: <b>${data.necessary?"Necessary":"Could save"}</b>${data.reason?" — "+esc(data.reason):""}. You can still change it.`;
-  }catch(e){rn.className="rec-note show";rn.textContent="Couldn't get a suggestion just now — pick whichever fits.";}
+    rn.className="rec-note show";rn.innerHTML=`${tr("suggested",data.necessary)}${data.reason?" — "+esc(data.reason):""}. ${tr("ai_pick")}`;
+  }catch(e){rn.className="rec-note show";rn.textContent=tr("ai_fallback");}
 }
 
 /* ---------- receipt ---------- */
@@ -1279,9 +1503,9 @@ async function onFile(file){
 async function scanReceipt(){
   if(!pendingPhoto)return;
   const status=document.getElementById("scan-status");
-  status.className="scan-status show";status.innerHTML='<span class="spinner"></span> Reading the receipt…';
+  status.className="scan-status show";status.innerHTML=`<span class="spinner"></span> ${tr("scan_reading")}`;
   const cats=CATEGORIES.map(c=>c.name).join(", ");
-  const instr=`You are reading a receipt photo. It may be in any language — Korean, English, or anything else. Read it regardless of language and respond with ONLY a JSON object, no markdown. Schema: {"amount": number (grand total), "merchant": string (store name), "date": "YYYY-MM-DD" or null, "category": one of: ${cats}, "necessary": boolean, "summary": one short sentence in English}. If a field is unreadable use null.`;
+  const instr=`You are reading a receipt photo. It may be in any language — Korean, English, or anything else. Read it regardless of language and respond with ONLY a JSON object, no markdown. Schema: {"amount": number (grand total), "merchant": string (store name), "date": "YYYY-MM-DD" or null, "category": one of: ${cats}, "necessary": boolean, "summary": one short sentence in ${lang==="ko"?"Korean":"English"}}. If a field is unreadable use null.`;
   try{
     const txt=await callClaude([{type:"image",source:{type:"base64",media_type:pendingPhoto.media,data:pendingPhoto.base64}},{type:"text",text:instr}]);
     const data=JSON.parse(txt.replace(/^```[^\n]*\n?|```$/gm,"").trim());
@@ -1291,10 +1515,10 @@ async function scanReceipt(){
     if(data.category){const o=[...document.getElementById("category").options].find(x=>x.value===data.category);if(o)document.getElementById("category").value=data.category;}
     if(typeof data.necessary==="boolean")setMode(data.necessary?"nec":"opt");
     if(data.summary&&!document.getElementById("memo").value)document.getElementById("memo").value=data.summary;
-    status.className="scan-status show ok";status.textContent="Filled from receipt — check and adjust if needed.";
+    status.className="scan-status show ok";status.textContent=tr("scan_ok");
   }catch(e){
     status.className="scan-status show err";
-    status.innerHTML="Couldn't read it automatically — fill in manually, or <button class='mini-btn' style='margin-left:4px' onclick='scanReceipt()'>retry</button>";
+    status.innerHTML=`${tr("scan_err")} <button class='mini-btn' style='margin-left:4px' onclick='scanReceipt()'>${tr("scan_retry")}</button>`;
   }
 }
 async function viewPhoto(id){
@@ -1315,34 +1539,42 @@ function switchAccount(id){
 }
 function promptUnlock(id){
   const a=meta.accounts.find(x=>x.id===id);
-  openModal(`<h3>🔒 ${esc(a.name)}</h3><p>This account is locked. Enter its password to open it.</p>
-    <div class="field"><input type="password" id="lk-pw" inputmode="numeric" placeholder="Password" autocomplete="off"/></div>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="lk-go">Unlock</button></div>`);
+  const unlockDesc=lang==="ko"?"이 계정은 잠겨 있습니다. 비밀번호를 입력해 여세요.":"This account is locked. Enter its password to open it.";
+  const unlockPh=lang==="ko"?"비밀번호":"Password";
+  const unlockBtn=lang==="ko"?"잠금 해제":"Unlock";
+  openModal(`<h3>🔒 ${esc(a.name)}</h3><p>${unlockDesc}</p>
+    <div class="field"><input type="password" id="lk-pw" inputmode="numeric" placeholder="${unlockPh}" autocomplete="off"/></div>
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="lk-go">${unlockBtn}</button></div>`);
   setTimeout(()=>document.getElementById("lk-pw").focus(),60);
-  const go=()=>{const v=document.getElementById("lk-pw").value;if(v&&hashCode(v)===a.lock){unlocked.clear();unlocked.add(id);closeModal();meta.currentAccountId=id;saveMeta();resetAnalysis();render();}else toast("Wrong password");};
+  const wrongPw=lang==="ko"?"비밀번호가 틀립니다":"Wrong password";
+  const go=()=>{const v=document.getElementById("lk-pw").value;if(v&&hashCode(v)===a.lock){unlocked.clear();unlocked.add(id);closeModal();meta.currentAccountId=id;saveMeta();resetAnalysis();render();}else toast(wrongPw);};
   document.getElementById("lk-go").onclick=go;
   document.getElementById("lk-pw").addEventListener("keydown",e=>{if(e.key==="Enter")go();});
 }
 function openLockForm(){
   const a=acct();const locked=!!a.lock;
-  openModal(`<h3>${locked?"Manage lock":"Lock account"} — ${esc(a.name)}</h3>
-    <p>${locked?"This account is locked. You can change or remove its password.":"Set a password to keep this account private. It stops someone from casually opening it on this shared device — note it isn't strong security, since the data still lives on the device."}</p>
-    <div class="field"><label for="lk-new">${locked?"New password":"Password"}</label><input type="password" id="lk-new" inputmode="numeric" placeholder="${locked?'Leave blank to keep current':'e.g. 1234'}" autocomplete="off"/></div>
-    <div class="modal-actions">${locked?'<button class="ghost" id="lk-remove">Remove lock</button>':'<button class="ghost" id="lk-back">Back</button>'}<button class="primary" id="lk-save">Save</button></div>`);
-  if(locked)document.getElementById("lk-remove").onclick=async()=>{delete a.lock;unlocked.add(a.id);await saveMeta();render();openFullSettings();toast("Lock removed");};
+  const lockHdr=locked?tr("manage_lock"):tr("lock_account_hdr");
+  const lockDesc=locked?(lang==="ko"?"이 계정은 잠겨 있습니다. 비밀번호를 변경하거나 잠금을 해제할 수 있습니다.":"This account is locked. You can change or remove its password."):(lang==="ko"?"비밀번호를 설정하면 이 계정을 비공개로 유지할 수 있습니다.":"Set a password to keep this account private. It stops someone from casually opening it on this shared device.");
+  const lockPh=locked?(lang==="ko"?"비워두면 현재 비밀번호 유지":"Leave blank to keep current"):(lang==="ko"?"예: 1234":"e.g. 1234");
+  const lockPwLbl=locked?tr("change_password"):tr("new_pw");
+  openModal(`<h3>${lockHdr} — ${esc(a.name)}</h3>
+    <p>${lockDesc}</p>
+    <div class="field"><label for="lk-new">${lockPwLbl}</label><input type="password" id="lk-new" inputmode="numeric" placeholder="${lockPh}" autocomplete="off"/></div>
+    <div class="modal-actions">${locked?`<button class="ghost" id="lk-remove">${lang==="ko"?"잠금 해제":"Remove lock"}</button>`:`<button class="ghost" id="lk-back">${tr("back")}</button>`}<button class="primary" id="lk-save">${tr("save")}</button></div>`);
+  if(locked)document.getElementById("lk-remove").onclick=async()=>{delete a.lock;unlocked.add(a.id);await saveMeta();render();openFullSettings();toast(tr("lock_removed"));};
   else document.getElementById("lk-back").onclick=()=>openFullSettings();
   document.getElementById("lk-save").onclick=async()=>{
     const v=document.getElementById("lk-new").value.trim();
-    if(!locked&&!v){toast("Enter a password");return;}
+    if(!locked&&!v){toast(lang==="ko"?"비밀번호를 입력하세요":"Enter a password");return;}
     if(v){a.lock=hashCode(v);unlocked.add(a.id);}
-    await saveMeta();render();openFullSettings();toast("Saved");
+    await saveMeta();render();openFullSettings();toast(tr("save"));
   };
 }
 async function analyze(){
   const ents=monthEntries(),body=document.getElementById("analysis-body"),btn=document.getElementById("analyze");
-  if(ents.length===0){body.innerHTML='<span class="placeholder">No entries this month on this account yet — add a few first.</span>';return;}
-  btn.disabled=true;document.getElementById("analyze-label").innerHTML='<span class="spinner"></span> Analyzing…';
-  body.innerHTML='<span class="placeholder">Looking at the patterns…</span>';
+  if(ents.length===0){body.innerHTML=`<span class="placeholder">${tr("no_entries_month")}</span>`;return;}
+  btn.disabled=true;document.getElementById("analyze-label").innerHTML=`<span class="spinner"></span> ${tr("analyzing")}`;
+  body.innerHTML=`<span class="placeholder">${tr("looking_patterns")}</span>`;
   const budget=meta.budgets[bkey()]||0;
   const incTotal=monthIncome().reduce((s,e)=>s+e.amount,0);
   const incLine=incTotal>0?`Income recorded this month: ${fmt(incTotal)}.`:"No income recorded this month.";
@@ -1354,10 +1586,10 @@ async function analyze(){
 Entries for ${monthLabel(currentMonth)}:
 ${lines}
 
-Write a concise analysis (about 160 words) in plain text, short paragraphs, no markdown headings or bullet symbols. Cover where most money goes, the balance of necessary vs could-save (note any partial splits and recurring bills), patterns worth noticing using the memos, and how they're tracking toward the goal. End with 2-3 specific, realistic suggestions to reach that goal. Use the real numbers. Speak directly to the person managing this account.`;
+Write a concise analysis (about 160 words) in plain text, short paragraphs, no markdown headings or bullet symbols. Cover where most money goes, the balance of necessary vs could-save (note any partial splits and recurring bills), patterns worth noticing using the memos, and how they're tracking toward the goal. End with 2-3 specific, realistic suggestions to reach that goal. Use the real numbers. Speak directly to the person managing this account. Respond in ${lang==="ko"?"Korean":"English"}.`;
   try{const txt=await callClaude(prompt);body.innerHTML="<p>"+esc(txt).replace(/\n{2,}/g,"</p><p>").replace(/\n/g,"<br>")+"</p>";}
-  catch(e){body.innerHTML='<span class="placeholder">Couldn\u2019t run the analysis just now. Please try again in a moment.</span>';}
-  finally{btn.disabled=false;document.getElementById("analyze-label").textContent="Analyze this account";}
+  catch(e){body.innerHTML=`<span class="placeholder">${tr("couldnt_analyze")}</span>`;}
+  finally{btn.disabled=false;document.getElementById("analyze-label").textContent=tr("analyze_account");}
 }
 
 /* ---------- accounts ---------- */
@@ -1373,10 +1605,12 @@ function openAddAccount(){
   document.getElementById("m-acct").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("m-acct-save").click();});
 }
 async function deleteAccount(id){
-  if(meta.accounts.length<=1){toast("Keep at least one account");return;}
+  if(meta.accounts.length<=1){toast(lang==="ko"?"계정을 하나 이상 유지해야 합니다":"Keep at least one account");return;}
   const a=meta.accounts.find(x=>x.id===id);const n=entries.filter(e=>e.accountId===id).length;
-  openModal(`<h3>Delete "${esc(a.name)}"?</h3><p>This removes the account, its ${n} ${n===1?"entry":"entries"}, and its recurring items. This can't be undone.</p>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" style="background:var(--over);border-color:var(--over)" id="m-del">Delete account</button></div>`);
+  const delHdr=lang==="ko"?`"${esc(a.name)}" 삭제?`:`Delete "${esc(a.name)}"?`;
+  const delDesc=lang==="ko"?`이 계정, ${n}개 내역, 정기 항목이 모두 삭제됩니다. 되돌릴 수 없습니다.`:`This removes the account, its ${n} ${n===1?"entry":"entries"}, and its recurring items. This can't be undone.`;
+  openModal(`<h3>${delHdr}</h3><p>${delDesc}</p>
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" style="background:var(--over);border-color:var(--over)" id="m-del">${lang==="ko"?"계정 삭제":"Delete account"}</button></div>`);
   document.getElementById("m-del").onclick=async()=>{
     const pid=entries.filter(e=>e.accountId===id&&e.hasPhoto).map(e=>e.id);
     entries=entries.filter(e=>e.accountId!==id);
@@ -1388,7 +1622,7 @@ async function deleteAccount(id){
     if(meta.currentAccountId===id)meta.currentAccountId=meta.accounts[0].id;
     await saveEntries();await saveMeta();
     for(const p of pid){try{await store.delete(PKEY(p),SHARED);}catch(e){}}
-    closeModal();resetAnalysis();render();toast("Account deleted");
+    closeModal();resetAnalysis();render();toast(lang==="ko"?"계정이 삭제되었습니다":"Account deleted");
   };
 }
 
@@ -1396,14 +1630,22 @@ async function deleteAccount(id){
 function openRecurModal(id){
   const t=id?(meta.recurring||[]).find(x=>x.id===id):null;
   let necc=t?t.necessary:true;
-  const catOpts=CATEGORIES.map(c=>`<option value="${esc(c.name)}"${t&&t.category===c.name?" selected":""}>${esc(c.name)}</option>`).join("");
-  openModal(`<h3>${t?"Edit":"Add"} recurring item</h3><p>For ${esc(acct().name)}. Appears automatically each month — edit any month's copy if the amount changes.</p>
-    <div class="field"><label for="r-name">Name</label><input type="text" id="r-name" placeholder="Name this item" value="${t?esc(t.name):""}"/></div>
-    <div class="field"><label for="r-amount">Regular amount</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="r-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${t?t.amount:""}"/></div></div>
-    <div class="row2"><div class="field"><label for="r-cat">Category</label><select id="r-cat">${catOpts}</select></div><div class="field"><label for="r-day">Billing day</label><input type="number" id="r-day" min="1" max="28" value="${t?(t.billingDay||1):1}"/></div></div>
-    <div class="field"><label>Necessary or could save</label><div class="toggle"><button type="button" class="t-nec" id="r-nec"><span class="d"></span>Necessary</button><button type="button" class="t-opt" id="r-opt"><span class="d"></span>Could save</button></div></div>
-    <div class="field"><label for="r-end">Ends on (optional)</label><input type="date" id="r-end" value="${t&&t.endDate?t.endDate:""}"/></div>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="r-save">${t?"Save":"Add"}</button></div>`);
+  const catOpts=CATEGORIES.map(c=>`<option value="${esc(c.name)}"${t&&t.category===c.name?" selected":""}>${esc(catLabel(c.name))}</option>`).join("");
+  const rHdr=t?(lang==="ko"?"정기 항목 수정":"Edit recurring item"):(lang==="ko"?"정기 항목 추가":"Add recurring item");
+  const rDesc=lang==="ko"?`${esc(acct().name)} 계정. 매달 자동으로 추가됩니다.`:`For ${esc(acct().name)}. Appears automatically each month — edit any month's copy if the amount changes.`;
+  const rNameLbl=lang==="ko"?"이름":"Name";const rNamePh=lang==="ko"?"항목 이름":"Name this item";
+  const rAmtLbl=lang==="ko"?"정기 금액":"Regular amount";
+  const rCatLbl=lang==="ko"?"카테고리":"Category";
+  const rDayLbl=lang==="ko"?"결제일":"Billing day";
+  const rNecLbl=lang==="ko"?"필수 또는 절약 가능":"Necessary or could save";
+  const rEndLbl=lang==="ko"?"종료일 (선택사항)":"Ends on (optional)";
+  openModal(`<h3>${rHdr}</h3><p>${rDesc}</p>
+    <div class="field"><label for="r-name">${rNameLbl}</label><input type="text" id="r-name" placeholder="${rNamePh}" value="${t?esc(t.name):""}"/></div>
+    <div class="field"><label for="r-amount">${rAmtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="r-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${t?t.amount:""}"/></div></div>
+    <div class="row2"><div class="field"><label for="r-cat">${rCatLbl}</label><select id="r-cat">${catOpts}</select></div><div class="field"><label for="r-day">${rDayLbl}</label><input type="number" id="r-day" min="1" max="28" value="${t?(t.billingDay||1):1}"/></div></div>
+    <div class="field"><label>${rNecLbl}</label><div class="toggle"><button type="button" class="t-nec" id="r-nec"><span class="d"></span>${tr("necessary")}</button><button type="button" class="t-opt" id="r-opt"><span class="d"></span>${tr("could_save")}</button></div></div>
+    <div class="field"><label for="r-end">${rEndLbl}</label><input type="date" id="r-end" value="${t&&t.endDate?t.endDate:""}"/></div>
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="r-save">${t?tr("save"):tr("add")}</button></div>`);
   const setRN=n=>{necc=n;document.getElementById("r-nec").setAttribute("aria-pressed",n?"true":"false");document.getElementById("r-opt").setAttribute("aria-pressed",n?"false":"true");};
   setRN(necc);
   document.getElementById("r-nec").onclick=()=>setRN(true);
@@ -1411,47 +1653,54 @@ function openRecurModal(id){
   document.getElementById("r-save").onclick=async()=>{
     const name=document.getElementById("r-name").value.trim();
     const amount=parseFloat(document.getElementById("r-amount").value);
-    if(!name){toast("Give it a name");return;}
-    if(!amount||amount<=0){toast("Enter the regular amount");return;}
+    if(!name){toast(lang==="ko"?"이름을 입력하세요":"Give it a name");return;}
+    if(!amount||amount<=0){toast(lang==="ko"?"금액을 입력하세요":"Enter the regular amount");return;}
     const data={name,amount,category:document.getElementById("r-cat").value,necessary:necc,
       billingDay:Math.min(Math.max(parseInt(document.getElementById("r-day").value)||1,1),28),
       endDate:document.getElementById("r-end").value||null};
     if(!meta.recurring)meta.recurring=[];
     if(t){Object.assign(t,data);}
     else{meta.recurring.push(Object.assign({id:uid(),accountId:meta.currentAccountId,startMonth:currentMonth},data));}
-    await saveMeta();closeModal();render();toast(t?"Updated":"Recurring item added");
+    await saveMeta();closeModal();render();toast(t?(lang==="ko"?"수정되었습니다":"Updated"):(lang==="ko"?"정기 항목이 추가되었습니다":"Recurring item added"));
   };
 }
 async function deleteRecur(id){
   const t=(meta.recurring||[]).find(x=>x.id===id);if(!t)return;
-  openModal(`<h3>Delete "${esc(t.name)}"?</h3><p>Stops it from repeating in future months. Entries already added to past months stay as they are.</p>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" style="background:var(--over);border-color:var(--over)" id="rd">Delete</button></div>`);
+  const delDesc=lang==="ko"?"앞으로 반복되지 않습니다. 이전 달에 추가된 항목은 그대로 유지됩니다.":"Stops it from repeating in future months. Entries already added to past months stay as they are.";
+  openModal(`<h3>${lang==="ko"?`"${esc(t.name)}" 삭제?`:`Delete "${esc(t.name)}"?`}</h3><p>${delDesc}</p>
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" style="background:var(--over);border-color:var(--over)" id="rd">${tr("del")}</button></div>`);
   document.getElementById("rd").onclick=async()=>{
-    meta.recurring=meta.recurring.filter(x=>x.id!==id);await saveMeta();closeModal();render();toast("Removed");
+    meta.recurring=meta.recurring.filter(x=>x.id!==id);await saveMeta();closeModal();render();toast(lang==="ko"?"삭제되었습니다":"Removed");
   };
 }
 
 /* ---------- budget / goal ---------- */
 function openBudget(){
-  openModal(`<h3>Set this month's budget</h3><p>How much are you working with for ${esc(acct().name)} in ${monthLabel(currentMonth)}?</p>
+  const budHdr=lang==="ko"?`이번 달 예산 설정`:`Set this month's budget`;
+  const budDesc=lang==="ko"?`${esc(acct().name)} 계정의 ${monthLabel(currentMonth)} 예산은 얼마인가요?`:`How much are you working with for ${esc(acct().name)} in ${monthLabel(currentMonth)}?`;
+  openModal(`<h3>${budHdr}</h3><p>${budDesc}</p>
     <div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="m-budget" inputmode="decimal" placeholder="0" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${meta.budgets[bkey()]||""}"/></div>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="m-budget-save">Save</button></div>`);
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="m-budget-save">${tr("save")}</button></div>`);
   setTimeout(()=>document.getElementById("m-budget").focus(),50);
-  document.getElementById("m-budget-save").onclick=async()=>{const v=parseFloat(document.getElementById("m-budget").value);meta.budgets[bkey()]=(v&&v>0)?v:0;await saveMeta();closeModal();render();toast("Budget saved");};
+  document.getElementById("m-budget-save").onclick=async()=>{const v=parseFloat(document.getElementById("m-budget").value);meta.budgets[bkey()]=(v&&v>0)?v:0;await saveMeta();closeModal();render();toast(lang==="ko"?"예산이 저장되었습니다":"Budget saved");};
   document.getElementById("m-budget").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("m-budget-save").click();});
 }
 function openGoal(){
   const g=(meta.goals&&meta.goals[bkey()])||{target:0,note:""};
-  openModal(`<h3>Goal for ${monthLabel(currentMonth)}</h3><p>Set a goal for ${esc(acct().name)} this month — the analysis will take it into account.</p>
-    <div class="field"><label for="g-note">Goal</label><input type="text" id="g-note" placeholder="What you want to focus on" value="${esc(g.note||"")}"/></div>
-    <div class="field"><label for="g-target">Savings target (optional)</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="g-target" inputmode="decimal" placeholder="0" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${g.target||""}"/></div></div>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="g-save">Save goal</button></div>`);
+  const goalHdr=lang==="ko"?`${monthLabel(currentMonth)} 목표`:`Goal for ${monthLabel(currentMonth)}`;
+  const goalDesc=lang==="ko"?`${esc(acct().name)} 계정의 이번 달 목표를 설정하세요 — 분석에 반영됩니다.`:`Set a goal for ${esc(acct().name)} this month — the analysis will take it into account.`;
+  const goalLbl=lang==="ko"?"목표":"Goal";const goalPh=lang==="ko"?"집중할 것":"What you want to focus on";
+  const savTgtLbl=lang==="ko"?"저축 목표 (선택사항)":"Savings target (optional)";
+  openModal(`<h3>${goalHdr}</h3><p>${goalDesc}</p>
+    <div class="field"><label for="g-note">${goalLbl}</label><input type="text" id="g-note" placeholder="${goalPh}" value="${esc(g.note||"")}"/></div>
+    <div class="field"><label for="g-target">${savTgtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="g-target" inputmode="decimal" placeholder="0" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${g.target||""}"/></div></div>
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="g-save">${lang==="ko"?"목표 저장":"Save goal"}</button></div>`);
   setTimeout(()=>document.getElementById("g-note").focus(),50);
   document.getElementById("g-save").onclick=async()=>{
     if(!meta.goals)meta.goals={};
     const note=document.getElementById("g-note").value.trim();const target=parseFloat(document.getElementById("g-target").value)||0;
     if(note||target>0)meta.goals[bkey()]={note,target};else delete meta.goals[bkey()];
-    await saveMeta();closeModal();render();toast("Goal saved");
+    await saveMeta();closeModal();render();toast(lang==="ko"?"목표가 저장되었습니다":"Goal saved");
   };
   document.getElementById("g-note").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("g-save").click();});
 }
@@ -1459,9 +1708,10 @@ function openGoal(){
 /* ---------- currency ---------- */
 function openCurrencyMenu(){
   const opts=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k].sym}  ${CUR_NAMES[k]} (${k})</option>`).join("");
-  openModal(`<h3>Currency</h3><p>Change the currency for your whole ledger.</p>
-    <div class="field"><label for="cur-sel">Currency</label><select id="cur-sel">${opts}</select></div>
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="cur-cont">Continue</button></div>`);
+  const curHdr=lang==="ko"?"통화":"Currency";const curDesc=lang==="ko"?"전체 가계부의 통화를 변경합니다.":"Change the currency for your whole ledger.";
+  openModal(`<h3>${curHdr}</h3><p>${curDesc}</p>
+    <div class="field"><label for="cur-sel">${curHdr}</label><select id="cur-sel">${opts}</select></div>
+    <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="cur-cont">${lang==="ko"?"계속":"Continue"}</button></div>`);
   document.getElementById("cur-sel").value=meta.currency;
   document.getElementById("cur-cont").onclick=()=>{const nc=document.getElementById("cur-sel").value;closeModal();if(nc!==meta.currency)setTimeout(()=>openConvertChoice(nc),40);};
 }
@@ -1472,14 +1722,14 @@ function openConvertChoice(newCur){
     <p style="font-size:12.5px;color:var(--ink-faint);margin:0;">Rates are approximate. "Just change symbol" keeps the numbers exactly as they are.</p>
     <div class="modal-actions"><button class="ghost" id="m-cur-cancel">Cancel</button><button class="ghost" id="m-cur-symbol">Just change symbol</button><button class="primary" id="m-cur-convert">Convert amounts</button></div>`);
   document.getElementById("m-cur-cancel").onclick=closeModal;
-  document.getElementById("m-cur-symbol").onclick=async()=>{meta.currency=newCur;await saveMeta();closeModal();render();toast("Currency updated");};
+  document.getElementById("m-cur-symbol").onclick=async()=>{meta.currency=newCur;await saveMeta();closeModal();render();toast(lang==="ko"?"통화가 변경되었습니다":"Currency updated");};
   document.getElementById("m-cur-convert").onclick=async()=>{
     const r=parseFloat(document.getElementById("m-rate").value)||rate;const round=n=>dec===0?Math.round(n*r):Math.round(n*r*100)/100;
     entries.forEach(e=>{e.amount=round(e.amount);if(e.partial&&e.necAmount)e.necAmount=round(e.necAmount);});
     Object.keys(meta.budgets).forEach(k=>meta.budgets[k]=round(meta.budgets[k]));
     if(meta.goals)Object.keys(meta.goals).forEach(k=>{if(meta.goals[k]&&meta.goals[k].target)meta.goals[k].target=round(meta.goals[k].target);});
     if(meta.recurring)meta.recurring.forEach(t=>t.amount=round(t.amount));
-    meta.currency=newCur;await saveEntries();await saveMeta();closeModal();resetAnalysis();render();toast("Converted to "+newCur);
+    meta.currency=newCur;await saveEntries();await saveMeta();closeModal();resetAnalysis();render();toast(lang==="ko"?`${newCur}로 변환되었습니다`:"Converted to "+newCur);
   };
 }
 
@@ -1540,12 +1790,13 @@ window.closeModal=closeModal;
 /* ---------- account selection overlay ---------- */
 function showAccountSelect(){
   const w=document.getElementById("aso-welcome");
-  if(w){const n=(window.__TN_USER__||{}).name;w.textContent=n?"Welcome, "+n+"!":"Welcome!";}
+  if(w){const n=(window.__TN_USER__||{}).name;w.textContent=n?tr("welcome",n):(lang==="ko"?"환영합니다!":"Welcome!");}
+  const subEl=document.querySelector(".aso-sub");if(subEl)subEl.textContent=tr("choose_account");
   const c=document.getElementById("aso-cards");
   c.innerHTML=meta.accounts.map(a=>{
     const locked=a.lock&&!unlocked.has(a.id);
     const cur=a.id===meta.currentAccountId;
-    const sub=locked?"Private · tap to unlock":a.lock&&unlocked.has(a.id)?"Private · unlocked":"Shared account";
+    const sub=locked?tr("private_locked"):a.lock&&unlocked.has(a.id)?tr("private_unlocked"):tr("shared");
     return `<button class="aso-card${cur?" aso-cur":""}" data-id="${a.id}" type="button">`+
       `<div><div class="aso-card-name">${esc(a.name)}</div><div class="aso-card-sub">${sub}</div></div>`+
       (locked?'<span class="aso-lock">🔒</span>':'')+
@@ -1581,7 +1832,7 @@ function toast(m){const t=document.getElementById("toast");t.textContent=m;t.cla
 /* ---------- init ---------- */
 function initStatic(){
   const sel=document.getElementById("category");
-  sel.innerHTML=CATEGORIES.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+  sel.innerHTML=CATEGORIES.map(c=>`<option value="${esc(c.name)}">${esc(catLabel(c.name))}</option>`).join("");
   sel.onchange=()=>{const def=CATEGORIES.find(c=>c.name===sel.value);if(def)setMode(def.necessary?"nec":"opt");toggleFuel(sel.value);};
   document.getElementById("date").value=new Date().toISOString().slice(0,10);
 }
@@ -1628,11 +1879,13 @@ async function init(){
 
   document.getElementById("brand-logo").onclick=()=>{
     if(!meta)return;
-    openModal(`<h3>Switch account?</h3>`+
-      `<p style="color:var(--ink-soft);font-size:14px;margin:0 0 4px">Go back to the account list? Any unsaved changes will be kept.</p>`+
-      `<div class="modal-actions"><button class="ghost" onclick="closeModal()">Stay</button><button class="primary" id="m-go-accts">Go back</button></div>`);
+    openModal(`<h3>${tr("switch_account")}</h3>`+
+      `<p style="color:var(--ink-soft);font-size:14px;margin:0 0 4px">${tr("switch_confirm")}</p>`+
+      `<div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("stay")}</button><button class="primary" id="m-go-accts">${tr("go_to_accts")}</button></div>`);
     document.getElementById("m-go-accts").onclick=()=>{closeModal();showAccountSelect();};
   };
+
+  applyI18n();
 
   if(meta){
     // Auto-enter if there's exactly one unlocked account — no need to show picker
