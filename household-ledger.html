@@ -284,19 +284,36 @@
   .tc-name{font-size:14px;font-weight:600;color:var(--ink);}
   .tc-check{font-size:18px;font-weight:700;color:var(--accent);flex:none;width:22px;text-align:center;opacity:0;}
   .theme-card.active .tc-check{opacity:1;}
+
+  /* ── account selection overlay ── */
+  #acct-overlay{position:fixed;inset:0;background:var(--paper);display:none;align-items:center;justify-content:center;z-index:100;padding:32px 20px;overflow-y:auto;}
+  #acct-overlay.show{display:flex;}
+  .aso-inner{max-width:400px;width:100%;}
+  .aso-brand{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:32px;}
+  .aso-wordmark{font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.02em;}
+  .aso-heading{font-size:17px;font-weight:600;color:var(--ink);margin:0 0 16px;text-align:center;}
+  .aso-cards{display:flex;flex-direction:column;gap:10px;}
+  .aso-card{width:100%;background:var(--card);border:2px solid var(--mist);border-radius:var(--radius);padding:18px 20px;font-family:inherit;cursor:pointer;text-align:left;transition:.15s;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:var(--shadow);}
+  .aso-card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 16px -6px rgba(0,0,0,.14);}
+  .aso-card.aso-cur{border-color:var(--nec);}
+  .aso-card-name{font-size:16px;font-weight:600;color:var(--ink);}
+  .aso-card-sub{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  .aso-lock{font-size:20px;flex-shrink:0;}
+  #brand-logo{background:none;border:none;padding:0;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:inherit;}
+  #brand-logo:hover .wordmark{color:var(--accent);}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <div>
-      <div class="brand">
+      <button id="brand-logo" class="brand" type="button" title="Switch account">
         <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
           <path d="M10 28 L20 12 L30 28" stroke="var(--nec)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <circle cx="20" cy="24" r="2.5" fill="var(--accent)"/>
         </svg>
         <span class="wordmark">Tikle Nest</span>
-      </div>
+      </button>
       <div class="sub" id="acct-sub">—</div>
     </div>
     <div class="topbar-right">
@@ -451,6 +468,20 @@
 
 <div id="toast"></div>
 <div class="modal-bg" id="modal-bg"><div class="modal" id="modal"></div></div>
+
+<div id="acct-overlay">
+  <div class="aso-inner">
+    <div class="aso-brand">
+      <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+        <path d="M10 28 L20 12 L30 28" stroke="var(--nec)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="20" cy="24" r="2.5" fill="var(--accent)"/>
+      </svg>
+      <span class="aso-wordmark">Tikle Nest</span>
+    </div>
+    <h2 class="aso-heading">Choose an account</h2>
+    <div class="aso-cards" id="aso-cards"></div>
+  </div>
+</div>
 
 <div class="modal-bg" id="theme-modal">
   <div class="modal" style="max-width:480px">
@@ -1461,6 +1492,44 @@ function onboarding(){
 function openModal(html,locked){document.getElementById("modal").innerHTML=html;document.getElementById("modal-bg").classList.add("show");document.getElementById("modal-bg").onclick=locked?null:(e=>{if(e.target.id==="modal-bg")closeModal();});}
 function closeModal(){document.getElementById("modal-bg").classList.remove("show");}
 window.closeModal=closeModal;
+
+/* ---------- account selection overlay ---------- */
+function showAccountSelect(){
+  const c=document.getElementById("aso-cards");
+  c.innerHTML=meta.accounts.map(a=>{
+    const locked=a.lock&&!unlocked.has(a.id);
+    const cur=a.id===meta.currentAccountId;
+    const sub=locked?"Private · tap to unlock":a.lock&&unlocked.has(a.id)?"Private · unlocked":"Shared account";
+    return `<button class="aso-card${cur?" aso-cur":""}" data-id="${a.id}" type="button">`+
+      `<div><div class="aso-card-name">${esc(a.name)}</div><div class="aso-card-sub">${sub}</div></div>`+
+      (locked?'<span class="aso-lock">🔒</span>':'')+
+    `</button>`;
+  }).join("");
+  c.querySelectorAll(".aso-card").forEach(btn=>btn.onclick=()=>asoSelect(btn.dataset.id));
+  document.getElementById("acct-overlay").classList.add("show");
+}
+function asoSelect(id){
+  const a=meta.accounts.find(x=>x.id===id);
+  if(!a)return;
+  if(a.lock&&!unlocked.has(id)){
+    openModal(`<h3>🔒 ${esc(a.name)}</h3><p>Enter the password to open this account.</p>`+
+      `<div class="field"><input type="password" id="aso-pw" inputmode="numeric" placeholder="Password" autocomplete="off"/></div>`+
+      `<div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="aso-go">Unlock</button></div>`);
+    const go=()=>{const v=document.getElementById("aso-pw").value;if(v&&hashCode(v)===a.lock){unlocked.clear();unlocked.add(id);closeModal();asoEnter(id);}else toast("Wrong password");};
+    document.getElementById("aso-go").onclick=go;
+    document.getElementById("aso-pw").addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+    setTimeout(()=>document.getElementById("aso-pw").focus(),60);
+  }else{
+    asoEnter(id);
+  }
+}
+function asoEnter(id){
+  meta.currentAccountId=id;
+  saveMeta();
+  document.getElementById("acct-overlay").classList.remove("show");
+  resetAnalysis();
+  render();
+}
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),2200);}
 
 /* ---------- init ---------- */
@@ -1513,13 +1582,23 @@ async function init(){
   document.getElementById("file").onchange=e=>onFile(e.target.files[0]);
   document.getElementById("amount").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("note").focus();});
 
+  document.getElementById("brand-logo").onclick=()=>{
+    if(!meta)return;
+    openModal(`<h3>Switch account?</h3>`+
+      `<p style="color:var(--ink-soft);font-size:14px;margin:0 0 4px">Go back to the account list? Any unsaved changes will be kept.</p>`+
+      `<div class="modal-actions"><button class="ghost" onclick="closeModal()">Stay</button><button class="primary" id="m-go-accts">Go back</button></div>`);
+    document.getElementById("m-go-accts").onclick=()=>{closeModal();showAccountSelect();};
+  };
+
   if(meta){
-    if(acct()&&acct().lock){
-      const open=meta.accounts.find(a=>!a.lock);
-      if(open)meta.currentAccountId=open.id;
+    // Auto-enter if there's exactly one unlocked account — no need to show picker
+    const solo=meta.accounts.length===1&&!meta.accounts[0].lock;
+    if(solo){
+      meta.currentAccountId=meta.accounts[0].id;
+      render();
+    }else{
+      showAccountSelect();
     }
-    render();
-    if(acct()&&acct().lock&&!unlocked.has(acct().id))promptUnlock(acct().id);
   }
 }
 init();
