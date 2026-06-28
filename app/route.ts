@@ -19,20 +19,21 @@ export async function GET() {
     "utf-8"
   );
 
-  // Inject user context + sign-out chip into topbar
+  // Inject user context + topbar name/gear chip
   const contextScript = `<script>
-window.__TN_USER__ = ${JSON.stringify({ name: displayName, id: user?.id ?? "" })};
+window.__TN_USER__ = ${JSON.stringify({ name: displayName, id: user?.id ?? "", email: user?.email ?? "" })};
 document.addEventListener("DOMContentLoaded", function () {
   var target = document.querySelector(".topbar-right") || document.querySelector(".topbar");
   if (!target || !window.__TN_USER__) return;
   var chip = document.createElement("div");
   chip.style.cssText = "display:flex;align-items:center;gap:8px;flex-shrink:0";
   chip.innerHTML =
-    '<span style="font-size:13px;color:var(--ink-soft)">' +
+    '<span class="tn-username" style="font-size:13px;color:var(--ink-soft);font-weight:500">' +
     window.__TN_USER__.name +
-    "</span>" +
-    '<button onclick="fetch(\\'/api/signout\\',{method:\\'POST\\'}).then(function(){location.href=\\'/signin\\'})" ' +
-    'style="border:1px solid var(--mist);background:var(--paper);color:var(--ink-soft);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Sign out</button>';
+    '</span>' +
+    '<button onclick="if(window.openFullSettings)openFullSettings()" ' +
+    'style="border:1px solid var(--mist);background:var(--card);color:var(--ink-soft);border-radius:999px;width:34px;height:34px;font-size:16px;cursor:pointer;display:grid;place-items:center;font-family:inherit;transition:.15s;flex-shrink:0" ' +
+    'title="Settings" aria-label="Settings">⚙</button>';
   target.appendChild(chip);
 });
 </script>`;

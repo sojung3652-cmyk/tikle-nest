@@ -301,6 +301,17 @@
   .aso-lock{font-size:20px;flex-shrink:0;}
   #brand-logo{background:none;border:none;padding:0;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:inherit;}
   #brand-logo:hover .wordmark{color:var(--accent);}
+
+  /* ── full settings modal ── */
+  .set-sec{margin-bottom:24px;}
+  .set-sec-head{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);padding-bottom:9px;border-bottom:1px solid var(--mist);margin-bottom:14px;}
+  .set-invite{margin-top:12px;padding:12px 13px;background:var(--nec-soft);border-radius:var(--radius-sm);border:1px solid var(--mist);}
+  .set-invite-label{font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .set-invite-code{flex:1;font-size:20px;font-weight:700;letter-spacing:.1em;color:var(--nec-text);}
+  .set-signout{width:100%;border:1px solid var(--over-soft);background:var(--over-soft);color:var(--over-text);font-family:inherit;font-weight:600;font-size:15px;padding:13px;border-radius:var(--radius-sm);cursor:pointer;transition:.15s;margin-top:4px;}
+  .set-signout:hover{background:var(--over);color:#fff;border-color:var(--over);}
+  .aso-welcome{font-size:22px;font-weight:600;color:var(--ink);margin:0 0 4px;text-align:center;}
+  .aso-sub{font-size:14px;color:var(--ink-soft);margin:0 0 24px;text-align:center;}
 </style>
 </head>
 <body>
@@ -316,15 +327,7 @@
       </button>
       <div class="sub" id="acct-sub">—</div>
     </div>
-    <div class="topbar-right">
-      <button id="open-theme" class="theme-btn" aria-label="Change theme" title="Change theme">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="8" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="16" cy="14" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="8" cy="14" r="1.5" fill="currentColor" stroke="none"/>
-        </svg>
-      </button>
-    </div>
+    <div class="topbar-right"></div>
   </div>
 
   <div class="accountbar">
@@ -462,7 +465,7 @@
   </details>
 
   <div style="text-align:center;margin-top:26px">
-    <button class="chip-btn" id="open-settings">Account settings</button>
+    <button class="chip-btn" id="open-settings">Settings</button>
   </div>
 </div>
 
@@ -478,21 +481,12 @@
       </svg>
       <span class="aso-wordmark">Tikle Nest</span>
     </div>
-    <h2 class="aso-heading">Choose an account</h2>
+    <p class="aso-welcome" id="aso-welcome"></p>
+    <p class="aso-sub">Choose an account to manage</p>
     <div class="aso-cards" id="aso-cards"></div>
   </div>
 </div>
 
-<div class="modal-bg" id="theme-modal">
-  <div class="modal" style="max-width:480px">
-    <h3>Choose theme</h3>
-    <p>Pick a color palette for the app. Saved to this device.</p>
-    <div id="theme-cards" style="display:flex;flex-direction:column;gap:10px;margin-top:4px"></div>
-    <div class="modal-actions" style="margin-top:20px">
-      <button class="ghost" onclick="document.getElementById('theme-modal').classList.remove('show')">Close</button>
-    </div>
-  </div>
-</div>
 
 <script>
 /* ---------- storage ---------- */
@@ -531,9 +525,11 @@ function applyTheme(id){
   localStorage.setItem("tn-theme",id);
 }
 
-function renderThemeCards(){
+function renderThemeCards(containerId){
+  const cid=containerId||"s-theme-cards";
   const cur=localStorage.getItem("tn-theme")||"blush";
-  const container=document.getElementById("theme-cards");
+  const container=document.getElementById(cid);
+  if(!container)return;
   container.innerHTML="";
   Object.entries(THEMES).forEach(([id,t])=>{
     const btn=document.createElement("button");
@@ -554,7 +550,7 @@ function renderThemeCards(){
       '</div>'+
       '<div class="tc-label"><div class="tc-name">'+t.name+'</div></div>'+
       '<div class="tc-check">✓</div>';
-    btn.onclick=()=>{applyTheme(id);renderThemeCards();};
+    btn.onclick=()=>{applyTheme(id);renderThemeCards(cid);};
     container.appendChild(btn);
   });
 }
@@ -976,35 +972,83 @@ async function analyzeFuel(recs){
   finally{btn.disabled=false;document.getElementById("fuel-analyze-lbl").textContent="Get fuel advice";}
 }
 
-async function openSettings(){
-  const accRows=meta.accounts.map(a=>`<div class="arow"><input type="text" value="${esc(a.name)}" data-id="${a.id}" />${meta.accounts.length>1?`<button data-del="${a.id}">Delete</button>`:""}</div>`).join("");
+async function openFullSettings(){
+  const accRows=meta.accounts.map(a=>`<div class="arow"><input type="text" value="${esc(a.name)}" data-id="${a.id}"/>${meta.accounts.length>1?`<button data-del="${a.id}">Delete</button>`:""}</div>`).join("");
   let inviteCode="";
   try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
-  const inviteSection=inviteCode
-    ?`<div class="field" style="margin-top:4px;padding-top:16px;border-top:1px solid var(--mist)">
-        <label>Invite your partner</label>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-          <div style="flex:1;background:var(--nec-soft);border:1px solid var(--mist);border-radius:var(--radius-sm);padding:10px 14px;font-size:22px;font-weight:700;letter-spacing:.12em;color:var(--nec-text)">${esc(inviteCode)}</div>
-          <button class="mini-btn" id="s-copy-invite" style="flex-shrink:0">Copy</button>
-        </div>
-        <div style="font-size:12px;color:var(--ink-soft);margin-top:6px">Share this code so your partner can join at sign-up.</div>
-      </div>`
-    :"";
-  openModal(`<h3>Account settings</h3>
-    <div class="field"><label for="s-name">Household name</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="Our Home" /></div>
-    <div class="field"><label>Accounts</label><div class="acct-manage" id="s-acct">${accRows}</div></div>
-    <div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="New account name" /><button class="mini-btn" id="s-addacct" style="padding:0 16px">Add</button></div></div>
-    <div class="field"><label>Privacy</label><button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center">${acct().lock?"🔒 "+esc(acct().name)+" is locked — manage password":"Lock "+esc(acct().name)+" with a password"}</button></div>
-    ${inviteSection}
-    <div class="modal-actions"><button class="ghost" onclick="closeModal()">Close</button></div>`);
+  const user=window.__TN_USER__||{};
+  const curCur=meta.currency||"USD";
+  openModal(
+    `<h3 style="margin:0 0 22px">Settings</h3>`+
+
+    `<div class="set-sec">`+
+    `<div class="set-sec-head">Manage accounts</div>`+
+    `<div class="field"><label for="s-name">Household name</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="Our Home"/></div>`+
+    `<div class="field"><label>Accounts</label><div class="acct-manage" id="s-acct">${accRows}</div></div>`+
+    `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="New account name"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">Add</button></div></div>`+
+    `<button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center;margin-bottom:${inviteCode?10:0}px">${acct().lock?"🔒 "+esc(acct().name)+" — manage password":"Lock "+esc(acct().name)+" with a password"}</button>`+
+    (inviteCode
+      ?`<div class="set-invite"><div class="set-invite-label">Invite your partner</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">Copy</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">Share this code so your partner can join at sign-up.</div></div>`
+      :"")+
+    `</div>`+
+
+    `<div class="set-sec">`+
+    `<div class="set-sec-head">User information</div>`+
+    `<div class="field"><label>Display name</label><div style="display:flex;gap:8px"><input type="text" id="s-dispname" value="${esc(user.name||"")}"/><button class="mini-btn" id="s-savename" style="padding:0 14px">Save</button></div></div>`+
+    `<div class="field"><label>Email</label><div style="font-size:14px;color:var(--ink-soft);padding:9px 0">${esc(user.email||"—")}</div></div>`+
+    `<button class="btn-secondary" id="s-chpw" style="width:100%;justify-content:center">Change password</button>`+
+    `</div>`+
+
+    `<div class="set-sec">`+
+    `<div class="set-sec-head">General</div>`+
+    `<div class="field"><label>Color theme</label><div id="s-theme-cards" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>`+
+    `<div class="field" style="margin-bottom:0"><label>Currency</label><button class="btn-secondary" id="s-cur" style="width:100%;justify-content:center;margin-top:4px">Change currency (${esc(curCur)})</button></div>`+
+    `</div>`+
+
+    `<button id="s-signout" class="set-signout">Sign out</button>`+
+    `<div class="modal-actions" style="margin-top:14px"><button class="ghost" onclick="closeModal()">Close</button></div>`
+  );
+
+  renderThemeCards("s-theme-cards");
+
   const nm=document.getElementById("s-name");
   nm.addEventListener("input",()=>{meta.name=nm.value;document.getElementById("acct-sub").textContent=(nm.value.trim()?nm.value.trim()+" · ":"")+("Viewing "+acct().name);});
   nm.addEventListener("change",saveMeta);
   document.querySelectorAll("#s-acct input").forEach(inp=>inp.onchange=()=>{const a=meta.accounts.find(x=>x.id===inp.dataset.id);if(a){a.name=inp.value.trim()||a.name;saveMeta();render();}});
   document.querySelectorAll("#s-acct button[data-del]").forEach(b=>b.onclick=()=>deleteAccount(b.dataset.del));
   document.getElementById("s-lock").onclick=openLockForm;
-  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||"New account";const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openSettings();};
-  if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast("Invite code copied!")).catch(()=>{toast(inviteCode);});};};
+  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||"New account";const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openFullSettings();};
+  if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast("Invite code copied!")).catch(()=>toast(inviteCode));};};
+
+  document.getElementById("s-savename").onclick=async()=>{
+    const v=document.getElementById("s-dispname").value.trim();
+    if(!v)return;
+    const r=await fetch("/api/user",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({field:"name",value:v})});
+    if(r.ok){if(window.__TN_USER__)window.__TN_USER__.name=v;const sp=document.querySelector(".tn-username");if(sp)sp.textContent=v;toast("Name updated");}
+    else toast("Couldn't update name");
+  };
+
+  document.getElementById("s-chpw").onclick=()=>{
+    openModal(
+      `<h3>Change password</h3>`+
+      `<div class="field"><label>New password</label><input type="password" id="s-newpw" placeholder="At least 6 characters" minlength="6"/></div>`+
+      `<div class="modal-actions"><button class="ghost" onclick="closeModal()">Cancel</button><button class="primary" id="s-savepw">Save password</button></div>`
+    );
+    document.getElementById("s-savepw").onclick=async()=>{
+      const v=document.getElementById("s-newpw").value;
+      if(v.length<6){toast("At least 6 characters");return;}
+      const r=await fetch("/api/user",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({field:"password",value:v})});
+      if(r.ok){closeModal();toast("Password updated");}
+      else{try{const d=await r.json();toast(d.error||"Couldn't update password");}catch{toast("Couldn't update password");}}
+    };
+    setTimeout(()=>document.getElementById("s-newpw").focus(),60);
+  };
+
+  document.getElementById("s-cur").onclick=()=>{closeModal();openCurrencyMenu();};
+
+  document.getElementById("s-signout").onclick=()=>{
+    fetch("/api/signout",{method:"POST"}).then(()=>{location.href="/signin";});
+  };
 }
 
 function renderRecurring(){
@@ -1285,13 +1329,13 @@ function openLockForm(){
     <p>${locked?"This account is locked. You can change or remove its password.":"Set a password to keep this account private. It stops someone from casually opening it on this shared device — note it isn't strong security, since the data still lives on the device."}</p>
     <div class="field"><label for="lk-new">${locked?"New password":"Password"}</label><input type="password" id="lk-new" inputmode="numeric" placeholder="${locked?'Leave blank to keep current':'e.g. 1234'}" autocomplete="off"/></div>
     <div class="modal-actions">${locked?'<button class="ghost" id="lk-remove">Remove lock</button>':'<button class="ghost" id="lk-back">Back</button>'}<button class="primary" id="lk-save">Save</button></div>`);
-  if(locked)document.getElementById("lk-remove").onclick=async()=>{delete a.lock;unlocked.add(a.id);await saveMeta();render();openSettings();toast("Lock removed");};
-  else document.getElementById("lk-back").onclick=()=>openSettings();
+  if(locked)document.getElementById("lk-remove").onclick=async()=>{delete a.lock;unlocked.add(a.id);await saveMeta();render();openFullSettings();toast("Lock removed");};
+  else document.getElementById("lk-back").onclick=()=>openFullSettings();
   document.getElementById("lk-save").onclick=async()=>{
     const v=document.getElementById("lk-new").value.trim();
     if(!locked&&!v){toast("Enter a password");return;}
     if(v){a.lock=hashCode(v);unlocked.add(a.id);}
-    await saveMeta();render();openSettings();toast("Saved");
+    await saveMeta();render();openFullSettings();toast("Saved");
   };
 }
 async function analyze(){
@@ -1495,6 +1539,8 @@ window.closeModal=closeModal;
 
 /* ---------- account selection overlay ---------- */
 function showAccountSelect(){
+  const w=document.getElementById("aso-welcome");
+  if(w){const n=(window.__TN_USER__||{}).name;w.textContent=n?"Welcome, "+n+"!":"Welcome!";}
   const c=document.getElementById("aso-cards");
   c.innerHTML=meta.accounts.map(a=>{
     const locked=a.lock&&!unlocked.has(a.id);
@@ -1562,9 +1608,7 @@ async function init(){
   document.getElementById("add-recur").onclick=()=>openRecurModal();
   document.getElementById("open-income").onclick=openIncomeList;
   document.getElementById("open-fuel").onclick=openFuelView;
-  document.getElementById("open-settings").onclick=openSettings;
-  document.getElementById("open-theme").onclick=()=>{renderThemeCards();document.getElementById("theme-modal").classList.add("show");};
-  document.getElementById("theme-modal").addEventListener("click",e=>{if(e.target.id==="theme-modal")document.getElementById("theme-modal").classList.remove("show");});
+  document.getElementById("open-settings").onclick=openFullSettings;
   document.getElementById("ec-all").onclick=()=>{entrySort="date";entryFilter="all";entryCatSel=[];entryExpanded=false;sortOpen=false;showOpen=false;render();};
   const applyEntriesOpen=()=>{document.getElementById("entries-body").style.display=entriesOpen?"":"none";document.getElementById("ent-chev").classList.toggle("open",entriesOpen);};
   document.getElementById("entries-toggle").onclick=()=>{entriesOpen=!entriesOpen;applyEntriesOpen();};
