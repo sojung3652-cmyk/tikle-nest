@@ -174,14 +174,6 @@
   .insight.good{background:var(--nec-soft);color:var(--nec-text);border-color:#D4CCCE;}
   .insight.over{background:var(--over-soft);color:var(--over-text);border-color:#F0C0C0;}
 
-  .analysis{background:var(--card);border:1px solid var(--mist);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin-bottom:16px;}
-  .analysis-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
-  .analysis-head h2{margin:0;}
-  .btn-analyze{border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent-text);font-weight:500;font-size:14px;padding:9px 16px;border-radius:999px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px;}
-  .btn-analyze:hover{background:var(--accent);color:#fff;}
-  .btn-analyze[disabled]{opacity:.6;cursor:default;}
-  .analysis-body{font-size:14px;line-height:1.6;color:var(--ink);margin-top:14px;}
-  .analysis-body .placeholder{color:var(--ink-soft);font-size:14px;}
   .spinner{width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
 
@@ -475,11 +467,6 @@
     </section>
   </div>
 
-  <section class="analysis">
-    <div class="analysis-head"><h2>Spending analysis</h2><button class="btn-analyze" id="analyze"><span id="analyze-label">Analyze this account</span></button></div>
-    <div class="analysis-body" id="analysis-body"><span class="placeholder">Pick an account and tap analyze — I'll look at this month's spending patterns for just that account and suggest where you could save.</span></div>
-  </section>
-
   <section class="bb-section" id="bb-section">
     <div class="bb-head" id="bb-head">
       <div class="bb-head-left">
@@ -629,12 +616,6 @@ const TRANSLATIONS={
     nothing_here:(m,a)=>`Nothing here for ${m} on ${a}.`,
     add_entry_start:"Add an entry above to start tracking.",try_different:"Try a different option.",
     show_less:"Show less",see_all:n=>`See all (${n})`,
-    spending_analysis:"Spending analysis",analyze_account:"Analyze this account",
-    analyzing:"Analyzing…",
-    analysis_placeholder:"Pick an account and tap analyze — I'll look at this month's spending patterns for just that account and suggest where you could save.",
-    no_entries_month:'No entries this month on this account yet — add a few first.',
-    looking_patterns:"Looking at the patterns…",
-    couldnt_analyze:"Couldn’t run the analysis just now. Please try again in a moment.",
     couldnt_fuel:"Couldn’t analyze just now. Try again in a moment.",
     recurring:"Recurring & subscriptions",
     recurring_desc:"Bills that repeat every month, like rent, your phone plan, subscriptions, or utilities. They appear automatically each month with their regular amount, and you can edit any month's copy when the cost changes.",
@@ -678,9 +659,8 @@ const TRANSLATIONS={
     receipt_attached:"Receipt attached",
     receipt_saved_with:"Saved with this entry",
     remove:"Remove",
-    analysis_tap:m=>`Tap analyze to look at this account’s spending for ${m}.`,
     new_account:"New account",
-    new_account_desc:"Separate ledger with its own budget, entries, recurring items, and analysis — like Joint, His, Hers, or a specific bank account.",
+    new_account_desc:"Separate ledger with its own budget, entries, recurring items, and Budget Buddy insights — like Joint, His, Hers, or a specific bank account.",
     account_name_lbl:"Account name",
     account_name_ph2:"Joint account",
     create:"Create",
@@ -732,12 +712,6 @@ const TRANSLATIONS={
     nothing_here:(m,a)=>`${a}의 ${m} 내역이 없습니다.`,
     add_entry_start:"위에서 항목을 추가하면 추적이 시작됩니다.",try_different:"다른 옵션을 시도해 보세요.",
     show_less:"접기",see_all:n=>`전체 보기 (${n})`,
-    spending_analysis:"지출 분석",analyze_account:"이 계정 분석하기",
-    analyzing:"분석 중…",
-    analysis_placeholder:"계정을 선택하고 분석 버튼을 눌러보세요 — 이번 달 지출 패턴을 분석해 절약 방법을 제안해 드립니다.",
-    no_entries_month:"이번 달 이 계정에 내역이 없습니다 — 몇 가지 추가해 보세요.",
-    looking_patterns:"패턴을 분석 중…",
-    couldnt_analyze:"분석을 실행하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     couldnt_fuel:"분석하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     recurring:"정기 결제 & 구독",
     recurring_desc:"매달 반복되는 고정 지출입니다. 월세, 통신비, 구독 서비스, 공과금 등이 해당됩니다. 매달 자동으로 추가되며, 금액이 달라질 때는 해당 달의 항목을 수정할 수 있습니다.",
@@ -781,9 +755,8 @@ const TRANSLATIONS={
     receipt_attached:"영수증 첨부됨",
     receipt_saved_with:"이 항목과 함께 저장됩니다",
     remove:"제거",
-    analysis_tap:m=>`${m}의 지출을 분석하려면 분석 버튼을 누르세요.`,
     new_account:"새 계정",
-    new_account_desc:"예산, 내역, 정기 항목, 분석이 분리된 독립 장부입니다. 예: 공동, 개인, 특정 통장.",
+    new_account_desc:"예산, 내역, 정기 항목, Budget Buddy 분석이 분리된 독립 장부입니다. 예: 공동, 개인, 특정 통장.",
     account_name_lbl:"계정 이름",
     account_name_ph2:"공동 계정",
     create:"만들기",
@@ -817,14 +790,12 @@ function applyI18n(){
   set("open-fuel","fuel");set("edit-budget","edit_budget");set("edit-goal","goal");
   set("open-income","income");set("open-settings","settings");set("add","add_entry");
   set("add-recur","add_recurring");set("ec-all","all");set("ec-sort","sort");
-  set("ec-show","show");set("analyze-label","analyze_account");
+  set("ec-show","show");
   set("unit-g","gallons");set("unit-l","liters");set("btn-rec","ai_recommend");
   tog("btn-nec","necessary");tog("btn-opt","could_save");tog("btn-part","partially");
   lbl(".hero .eyebrow","budget_this_month");
   lbl(".grid .panel:first-child h2","add_an_entry");
   lbl(".grid .panel:last-child h2","where_went");
-  lbl(".analysis-head h2","spending_analysis");
-  lbl(".analysis-body .placeholder","analysis_placeholder");
   lbl("label[for='amount']","amount");lbl("label[for='note']","what_for");
   lbl("label[for='category']","category");lbl("label[for='date']","date");
   lbl("label[for='memo']","memo_label");lbl("label[for='partial-nec']","how_much_nec");
@@ -1734,11 +1705,7 @@ async function viewPhoto(id){
   }catch(e){toast(tr("receipt_load_err"));}
 }
 
-/* ---------- analysis ---------- */
-function resetAnalysis(){
-  document.getElementById("analysis-body").innerHTML=`<span class="placeholder">${tr("analysis_tap",monthLabel(currentMonth))}</span>`;
-  bbResetSession();
-}
+function resetAnalysis(){bbResetSession();}
 
 function switchAccount(id){
   if(id===meta.currentAccountId)return;
@@ -1780,28 +1747,6 @@ function openLockForm(){
     await saveMeta();render();openFullSettings(1);toast(tr("save"));
   };
 }
-async function analyze(){
-  const ents=monthEntries(),body=document.getElementById("analysis-body"),btn=document.getElementById("analyze");
-  if(ents.length===0){body.innerHTML=`<span class="placeholder">${tr("no_entries_month")}</span>`;return;}
-  btn.disabled=true;document.getElementById("analyze-label").innerHTML=`<span class="spinner"></span> ${tr("analyzing")}`;
-  body.innerHTML=`<span class="placeholder">${tr("looking_patterns")}</span>`;
-  const budget=meta.budgets[bkey()]||0;
-  const incTotal=monthIncome().reduce((s,e)=>s+e.amount,0);
-  const incLine=incTotal>0?`Income recorded this month: ${fmt(incTotal)}.`:"No income recorded this month.";
-  const goal=(meta.goals&&meta.goals[bkey()])||null;
-  const goalLine=goal&&(goal.note||goal.target>0)?`This month's goal: ${goal.note||""}${goal.target>0?` (savings target ${fmt(goal.target)})`:""}.`:"No specific goal set this month.";
-  const lines=ents.map(e=>{const s=split(e);const tg=e.partial?`partial (necessary ${fmt(s.nec)}, could-save ${fmt(s.opt)})`:(e.necessary?"necessary":"could-save");return `${e.date} | ${e.category} | ${tg} | ${fmt(e.amount)}${e.isRecurring?" | recurring":""} | ${e.note||""}${e.memo?(" — "+e.memo):""}`;}).join("\n");
-  const prompt=`You are a warm, practical household budgeting assistant. Analyze the spending below for the account "${acct().name}" in ${CUR_NAMES[meta.currency]||meta.currency}.${budget>0?` Monthly budget: ${fmt(budget)}.`:" No budget set."} ${incLine} ${goalLine}
-
-Entries for ${monthLabel(currentMonth)}:
-${lines}
-
-Write a concise analysis (about 160 words) in plain text, short paragraphs, no markdown headings or bullet symbols. Cover where most money goes, the balance of necessary vs could-save (note any partial splits and recurring bills), patterns worth noticing using the memos, and how they're tracking toward the goal. End with 2-3 specific, realistic suggestions to reach that goal. Use the real numbers. Speak directly to the person managing this account. Respond in ${lang==="ko"?"Korean":"English"}.`;
-  try{const txt=await callClaude(prompt);body.innerHTML="<p>"+esc(txt).replace(/\n{2,}/g,"</p><p>").replace(/\n/g,"<br>")+"</p>";}
-  catch(e){body.innerHTML=`<span class="placeholder">${tr("couldnt_analyze")}</span>`;}
-  finally{btn.disabled=false;document.getElementById("analyze-label").textContent=tr("analyze_account");}
-}
-
 /* ---------- accounts ---------- */
 function openAddAccount(){
   openModal(`<h3>${tr("new_account")}</h3><p>${tr("new_account_desc")}</p>
@@ -1898,7 +1843,7 @@ function openBudget(){
 function openGoal(){
   const g=(meta.goals&&meta.goals[bkey()])||{target:0,note:""};
   const goalHdr=lang==="ko"?`${monthLabel(currentMonth)} 목표`:`Goal for ${monthLabel(currentMonth)}`;
-  const goalDesc=lang==="ko"?`${esc(acct().name)} 계정의 이번 달 목표를 설정하세요 — 분석에 반영됩니다.`:`Set a goal for ${esc(acct().name)} this month — the analysis will take it into account.`;
+  const goalDesc=lang==="ko"?`${esc(acct().name)} 계정의 이번 달 목표를 설정하세요.`:`Set a savings goal for ${esc(acct().name)} this month — Budget Buddy will factor it into its advice.`;
   const goalLbl=lang==="ko"?"목표":"Goal";const goalPh=lang==="ko"?"집중할 것":"What you want to focus on";
   const savTgtLbl=lang==="ko"?"저축 목표 (선택사항)":"Savings target (optional)";
   openModal(`<h3>${goalHdr}</h3><p>${goalDesc}</p>
@@ -2213,7 +2158,6 @@ async function init(){
   document.getElementById("amount").addEventListener("input",()=>{if(pendingMode==="partial")updatePartialHint();});
   document.getElementById("edit-budget").onclick=openBudget;
   document.getElementById("edit-goal").onclick=openGoal;
-  document.getElementById("analyze").onclick=analyze;
   document.getElementById("change-cur").onclick=openCurrencyMenu;
   document.getElementById("add-recur").onclick=()=>openRecurModal();
   document.getElementById("open-income").onclick=openIncomeList;
