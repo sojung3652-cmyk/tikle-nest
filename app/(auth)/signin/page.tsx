@@ -22,6 +22,7 @@ export default async function SignInPage({
 
   return (
     <div className={styles.page}>
+      <Link className={styles.backBtn} href="/signup">← Back</Link>
       <div className={styles.card}>
         <div className={styles.brand}>
           <Logo size={36} />

@@ -945,13 +945,26 @@ async function analyzeFuel(recs){
   finally{btn.disabled=false;document.getElementById("fuel-analyze-lbl").textContent="Get fuel advice";}
 }
 
-function openSettings(){
+async function openSettings(){
   const accRows=meta.accounts.map(a=>`<div class="arow"><input type="text" value="${esc(a.name)}" data-id="${a.id}" />${meta.accounts.length>1?`<button data-del="${a.id}">Delete</button>`:""}</div>`).join("");
+  let inviteCode="";
+  try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
+  const inviteSection=inviteCode
+    ?`<div class="field" style="margin-top:4px;padding-top:16px;border-top:1px solid var(--mist)">
+        <label>Invite your partner</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+          <div style="flex:1;background:var(--nec-soft);border:1px solid var(--mist);border-radius:var(--radius-sm);padding:10px 14px;font-size:22px;font-weight:700;letter-spacing:.12em;color:var(--nec-text)">${esc(inviteCode)}</div>
+          <button class="mini-btn" id="s-copy-invite" style="flex-shrink:0">Copy</button>
+        </div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:6px">Share this code so your partner can join at sign-up.</div>
+      </div>`
+    :"";
   openModal(`<h3>Account settings</h3>
     <div class="field"><label for="s-name">Household name</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="Our Home" /></div>
     <div class="field"><label>Accounts</label><div class="acct-manage" id="s-acct">${accRows}</div></div>
     <div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="New account name" /><button class="mini-btn" id="s-addacct" style="padding:0 16px">Add</button></div></div>
     <div class="field"><label>Privacy</label><button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center">${acct().lock?"🔒 "+esc(acct().name)+" is locked — manage password":"Lock "+esc(acct().name)+" with a password"}</button></div>
+    ${inviteSection}
     <div class="modal-actions"><button class="ghost" onclick="closeModal()">Close</button></div>`);
   const nm=document.getElementById("s-name");
   nm.addEventListener("input",()=>{meta.name=nm.value;document.getElementById("acct-sub").textContent=(nm.value.trim()?nm.value.trim()+" · ":"")+("Viewing "+acct().name);});
@@ -960,6 +973,7 @@ function openSettings(){
   document.querySelectorAll("#s-acct button[data-del]").forEach(b=>b.onclick=()=>deleteAccount(b.dataset.del));
   document.getElementById("s-lock").onclick=openLockForm;
   document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||"New account";const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openSettings();};
+  if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast("Invite code copied!")).catch(()=>{toast(inviteCode);});};};
 }
 
 function renderRecurring(){

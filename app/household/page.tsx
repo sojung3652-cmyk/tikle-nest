@@ -43,8 +43,14 @@ export default function HouseholdPage() {
     else router.push("/");
   }
 
+  async function handleBack() {
+    await fetch("/api/signout", { method: "POST" });
+    router.push("/signin");
+  }
+
   return (
     <div className={styles.page}>
+      <button className={styles.backBtn} onClick={handleBack}>← Back</button>
       <div className={styles.card}>
         <div className={styles.brand}>
           <Logo size={36} />
@@ -71,7 +77,7 @@ export default function HouseholdPage() {
         {tab === "create" && (
           <form onSubmit={handleCreate}>
             <p className={styles.sub}>
-              Name your household. Your partner will join using the invite code you&apos;ll get after creating it.
+              Name your household. Your partner can join using the invite code — find it anytime in Account settings.
             </p>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="name">Household name</label>
