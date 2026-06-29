@@ -213,11 +213,16 @@
   .recur-item .iconbtn.del:hover{color:var(--over);background:var(--over-soft);}
   .btn-secondary{border:1px solid var(--nec);background:var(--nec-soft);color:var(--nec-text);font-weight:500;font-size:14px;padding:10px 16px;border-radius:var(--radius-sm);cursor:pointer;transition:.15s;}
   .btn-secondary:hover{background:var(--accent);color:#fff;}
-  .acct-manage{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
-  .acct-manage .arow{display:flex;align-items:center;gap:8px;}
-  .acct-manage .arow input{flex:1;}
-  .acct-manage .arow button{border:1px solid var(--mist);background:var(--paper);border-radius:8px;padding:8px 11px;font-size:13px;cursor:pointer;color:var(--over-text);}
-  .acct-manage .arow button:hover{border-color:var(--over);}
+  .acct-list{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+  .acct-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border:1px solid var(--mist);border-radius:10px;transition:.15s;}
+  .acct-row.acct-row-active{border-color:var(--accent);}
+  .acct-row-info{flex:1;min-width:0;}
+  .acct-row-name{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .acct-row-meta{display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap;}
+  .acct-badge{font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 7px;border-radius:20px;background:var(--mist);color:var(--ink-soft);}
+  .acct-badge.active{background:var(--nec-soft);color:var(--nec-text);}
+  .acct-edit-btn{flex-shrink:0;border:1px solid var(--mist);background:transparent;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-soft);transition:.15s;}
+  .acct-edit-btn:hover{border-color:var(--accent);color:var(--accent);}
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px;}
   .chip{border:1px solid var(--mist);background:var(--paper);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink);transition:.15s;}
   .chip:hover{border-color:var(--nec);background:var(--nec-soft);color:var(--nec-text);}
@@ -1287,15 +1292,29 @@ async function analyzeFuel(recs){
 }
 
 async function openFullSettings(openSection){
-  const accRows=meta.accounts.map(a=>`<div class="arow"><input type="text" value="${esc(a.name)}" data-id="${a.id}"/>${meta.accounts.length>1?`<button data-del="${a.id}">${tr("del")}</button>`:""}</div>`).join("");
   let inviteCode="";
   try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
   const user=window.__TN_USER__||{};
   const curCur=acct()?.currency||"USD";
-  // Snapshot original values for dirty detection
   const origHHName=meta.name||"";
-  const origAccNames={};meta.accounts.forEach(a=>origAccNames[a.id]=a.name);
   const origDispName=user.name||"";
+
+  const viewingLbl=lang==="ko"?"현재 보는 중":"Viewing";
+  const accRows=meta.accounts.map(a=>{
+    const isActive=a.id===meta.currentAccountId;
+    const locked=!!a.lock&&!unlocked.has(a.id);
+    return `<div class="acct-row${isActive?" acct-row-active":""}">
+      <div class="acct-row-info">
+        <div class="acct-row-name">${esc(a.name)}</div>
+        <div class="acct-row-meta">
+          <span class="acct-badge">${a.currency||"USD"}</span>
+          ${locked?`<span class="acct-badge">🔒</span>`:""}
+          ${isActive?`<span class="acct-badge active">● ${viewingLbl}</span>`:""}
+        </div>
+      </div>
+      <button class="acct-edit-btn" data-id="${a.id}">${tr("edit_btn")}</button>
+    </div>`;
+  }).join("");
 
   openModal(
     `<h3 style="margin:0 0 16px">${tr("settings")}</h3>`+
@@ -1305,9 +1324,8 @@ async function openFullSettings(openSection){
       `<div class="set-acc-hd" id="sacc-hd-1"><span class="chev">›</span>${tr("manage_accounts")}</div>`+
       `<div class="set-acc-body" id="sacc-bd-1">`+
         `<div class="field"><label for="s-name">${tr("household_name_label")}</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/></div>`+
-        `<div class="field"><label>${tr("accounts_label")}</label><div class="acct-manage" id="s-acct">${accRows}</div></div>`+
+        `<div class="field" style="margin-bottom:10px"><label>${tr("accounts_label")}</label><div class="acct-list">${accRows}</div></div>`+
         `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><select id="s-newacct-cur" style="flex-shrink:0;padding:0 8px;border:1px solid var(--mist);border-radius:10px;font-size:13px;background:var(--bg);color:var(--ink)">${Object.keys(CUR).map(k=>`<option value="${k}">${k}</option>`).join("")}</select><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
-        `<button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center;margin-bottom:${inviteCode?10:0}px">${acct().lock?tr("manage_password",esc(acct().name)):tr("lock_account",esc(acct().name))}</button>`+
         (inviteCode?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`:"")+
       `</div>`+
     `</div>`+
@@ -1337,19 +1355,14 @@ async function openFullSettings(openSection){
     `<div class="modal-actions" style="margin-top:14px"><button class="ghost" id="s-close">${tr("close")}</button></div>`
   );
 
-  // Dirty detection — only text inputs the user edits inline
   const isDirty=()=>{
     const nm=document.getElementById("s-name");
     const dn=document.getElementById("s-dispname");
     if(nm&&nm.value!==origHHName)return true;
     if(dn&&dn.value!==origDispName)return true;
-    for(const inp of document.querySelectorAll("#s-acct input[data-id]")){
-      if(origAccNames[inp.dataset.id]!==undefined&&inp.value!==origAccNames[inp.dataset.id])return true;
-    }
     return false;
   };
 
-  // Confirm before closing when there are unsaved changes
   const confirmClose=()=>{
     if(!isDirty()){closeModal();return;}
     openModal(
@@ -1360,21 +1373,13 @@ async function openFullSettings(openSection){
     document.getElementById("s-discard").onclick=()=>closeModal();
   };
 
-  // Save all text fields together
   const saveAll=async()=>{
     const btn=document.getElementById("s-saveall");
     if(btn)btn.disabled=true;
     try{
-      // Household name
       const nm=document.getElementById("s-name");
       if(nm){meta.name=nm.value.trim();document.getElementById("acct-sub").textContent=(meta.name?meta.name+" · ":"")+tr("viewing",acct().name);}
-      // Account names
-      document.querySelectorAll("#s-acct input[data-id]").forEach(inp=>{
-        const a=meta.accounts.find(x=>x.id===inp.dataset.id);
-        if(a)a.name=inp.value.trim()||a.name;
-      });
       await saveMeta();render();
-      // Display name (only if changed)
       const dn=document.getElementById("s-dispname");
       if(dn&&dn.value.trim()&&dn.value.trim()!==origDispName){
         const v=dn.value.trim();
@@ -1387,7 +1392,6 @@ async function openFullSettings(openSection){
     }catch(e){if(btn)btn.disabled=false;}
   };
 
-  // Accordion toggle — only one section open at a time
   const openAcc=n=>{
     [1,2,3].forEach(x=>{
       document.getElementById("sacc-hd-"+x).classList.remove("open");
@@ -1408,16 +1412,18 @@ async function openFullSettings(openSection){
   });
   if(openSection)openAcc(openSection);
 
-  // Override backdrop click to go through confirmClose
   document.getElementById("modal-bg").onclick=e=>{if(e.target.id==="modal-bg")confirmClose();};
-
   document.getElementById("s-saveall").onclick=saveAll;
   document.getElementById("s-close").onclick=confirmClose;
 
-  document.querySelectorAll("#s-acct button[data-del]").forEach(b=>b.onclick=()=>deleteAccount(b.dataset.del));
-  document.getElementById("s-lock").onclick=openLockForm;
+  document.querySelectorAll(".acct-edit-btn[data-id]").forEach(b=>b.onclick=()=>openAccountEdit(b.dataset.id));
   document.getElementById("s-newacct-cur").value=acct()?.currency||"USD";
-  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");const c=document.getElementById("s-newacct-cur").value;const id=uid();meta.accounts.push({id,name:v,currency:c});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);};
+  document.getElementById("s-addacct").onclick=async()=>{
+    const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");
+    const c=document.getElementById("s-newacct-cur").value;
+    const id=uid();
+    meta.accounts.push({id,name:v,currency:c});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);
+  };
   if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};};
 
   document.getElementById("s-lang-en").onclick=()=>setLang("en");
@@ -1446,6 +1452,45 @@ async function openFullSettings(openSection){
   };
 }
 
+function openAccountEdit(id){
+  const a=meta.accounts.find(x=>x.id===id);
+  if(!a)return;
+  const locked=!!a.lock;
+  const curOpts=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k].sym}  ${CUR_NAMES[k]} (${k})</option>`).join("");
+  const curLbl=lang==="ko"?"통화":"Currency";
+  const nameLbl=lang==="ko"?"계정 이름":"Account name";
+  const lockLbl=(locked?tr("manage_lock"):tr("lock_account_hdr"))+" — "+esc(a.name);
+  const lockIcon=locked?"🔒 ":"";
+  const delLbl=lang==="ko"?"계정 삭제":"Delete account";
+  openModal(
+    `<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">`+
+      `<button class="ghost" id="ae-back" style="padding:6px 10px;font-size:20px;line-height:1">‹</button>`+
+      `<h3 style="margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)}</h3>`+
+    `</div>`+
+    `<div class="field"><label for="ae-name">${nameLbl}</label><input type="text" id="ae-name" value="${esc(a.name)}"/></div>`+
+    `<div class="field"><label for="ae-cur">${curLbl}</label><select id="ae-cur">${curOpts}</select></div>`+
+    `<button class="btn-secondary" id="ae-lock" style="width:100%;justify-content:center;margin-bottom:8px">${lockIcon}${lockLbl}</button>`+
+    (meta.accounts.length>1?`<button class="btn-secondary" id="ae-del" style="width:100%;justify-content:center;border-color:var(--over-soft);background:var(--over-soft);color:var(--over-text);margin-bottom:0">${delLbl}</button>`:"")+
+    `<button class="primary" id="ae-save" style="width:100%;margin-top:12px">${tr("save")}</button>`+
+    `<div class="modal-actions" style="margin-top:8px"><button class="ghost" id="ae-cancel">${tr("cancel")}</button></div>`
+  );
+  document.getElementById("ae-cur").value=a.currency||"USD";
+  const goBack=()=>openFullSettings(1);
+  document.getElementById("ae-back").onclick=goBack;
+  document.getElementById("ae-cancel").onclick=goBack;
+  document.getElementById("ae-lock").onclick=async()=>{
+    const nm=document.getElementById("ae-name").value.trim();if(nm)a.name=nm;
+    const c=document.getElementById("ae-cur").value;a.currency=c;
+    await saveMeta();render();openLockForm(id);
+  };
+  if(meta.accounts.length>1)document.getElementById("ae-del").onclick=()=>deleteAccount(id);
+  document.getElementById("ae-save").onclick=async()=>{
+    const nm=document.getElementById("ae-name").value.trim();if(nm)a.name=nm;
+    a.currency=document.getElementById("ae-cur").value;
+    await saveMeta();render();openFullSettings(1);toast(tr("saved"));
+  };
+  document.getElementById("ae-name").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("ae-save").click();});
+}
 function renderRecurring(){
   const list=document.getElementById("recur-list");
   const items=(meta.recurring||[]).filter(t=>t.accountId===meta.currentAccountId);
@@ -1729,8 +1774,10 @@ function promptUnlock(id){
   document.getElementById("lk-go").onclick=go;
   document.getElementById("lk-pw").addEventListener("keydown",e=>{if(e.key==="Enter")go();});
 }
-function openLockForm(){
-  const a=acct();const locked=!!a.lock;
+function openLockForm(id){
+  const a=id?meta.accounts.find(x=>x.id===id):acct();
+  const goBack=id?()=>openAccountEdit(id):()=>openFullSettings(1);
+  const locked=!!a.lock;
   const lockHdr=locked?tr("manage_lock"):tr("lock_account_hdr");
   const lockDesc=locked?(lang==="ko"?"이 계정은 잠겨 있습니다. 비밀번호를 변경하거나 잠금을 해제할 수 있습니다.":"This account is locked. You can change or remove its password."):(lang==="ko"?"비밀번호를 설정하면 이 계정을 비공개로 유지할 수 있습니다.":"Set a password to keep this account private. It stops someone from casually opening it on this shared device.");
   const lockPh=locked?(lang==="ko"?"비워두면 현재 비밀번호 유지":"Leave blank to keep current"):(lang==="ko"?"예: 1234":"e.g. 1234");
@@ -1739,13 +1786,13 @@ function openLockForm(){
     <p>${lockDesc}</p>
     <div class="field"><label for="lk-new">${lockPwLbl}</label><input type="password" id="lk-new" inputmode="numeric" placeholder="${lockPh}" autocomplete="off"/></div>
     <div class="modal-actions">${locked?`<button class="ghost" id="lk-remove">${lang==="ko"?"잠금 해제":"Remove lock"}</button>`:`<button class="ghost" id="lk-back">${tr("back")}</button>`}<button class="primary" id="lk-save">${tr("save")}</button></div>`);
-  if(locked)document.getElementById("lk-remove").onclick=async()=>{delete a.lock;unlocked.add(a.id);await saveMeta();render();openFullSettings(1);toast(tr("lock_removed"));};
-  else document.getElementById("lk-back").onclick=()=>openFullSettings(1);
+  if(locked)document.getElementById("lk-remove").onclick=async()=>{delete a.lock;unlocked.add(a.id);await saveMeta();render();goBack();toast(tr("lock_removed"));};
+  else document.getElementById("lk-back").onclick=goBack;
   document.getElementById("lk-save").onclick=async()=>{
     const v=document.getElementById("lk-new").value.trim();
     if(!locked&&!v){toast(lang==="ko"?"비밀번호를 입력하세요":"Enter a password");return;}
     if(v){a.lock=hashCode(v);unlocked.add(a.id);}
-    await saveMeta();render();openFullSettings(1);toast(tr("save"));
+    await saveMeta();render();goBack();toast(tr("save"));
   };
 }
 /* ---------- accounts ---------- */
