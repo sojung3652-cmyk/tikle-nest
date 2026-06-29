@@ -1295,7 +1295,6 @@ async function openFullSettings(openSection){
   let inviteCode="";
   try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
   const user=window.__TN_USER__||{};
-  const curCur=acct()?.currency||"USD";
   const origHHName=meta.name||"";
   const origDispName=user.name||"";
 
@@ -1325,7 +1324,7 @@ async function openFullSettings(openSection){
       `<div class="set-acc-body" id="sacc-bd-1">`+
         `<div class="field"><label for="s-name">${tr("household_name_label")}</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/></div>`+
         `<div class="field" style="margin-bottom:10px"><label>${tr("accounts_label")}</label><div class="acct-list">${accRows}</div></div>`+
-        `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><select id="s-newacct-cur" style="flex-shrink:0;padding:0 8px;border:1px solid var(--mist);border-radius:10px;font-size:13px;background:var(--bg);color:var(--ink)">${Object.keys(CUR).map(k=>`<option value="${k}">${k}</option>`).join("")}</select><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
+        `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
         (inviteCode?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`:"")+
       `</div>`+
     `</div>`+
@@ -1345,8 +1344,7 @@ async function openFullSettings(openSection){
       `<div class="set-acc-hd" id="sacc-hd-3"><span class="chev">›</span>${tr("general")}</div>`+
       `<div class="set-acc-body" id="sacc-bd-3">`+
         `<div class="field"><label>${tr("color_theme")}</label><div id="s-theme-cards" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div></div>`+
-        `<div class="field"><label>${tr("language")}</label><div style="display:flex;gap:8px;margin-top:6px"><button class="pill" id="s-lang-en" aria-pressed="${lang==="en"}">${tr("lang_en")}</button><button class="pill" id="s-lang-ko" aria-pressed="${lang==="ko"}">${tr("lang_ko")}</button></div></div>`+
-        `<div class="field" style="margin-bottom:0"><label>${tr("currency_label")}</label><button class="btn-secondary" id="s-cur" style="width:100%;justify-content:center;margin-top:4px">${tr("change_currency",esc(curCur))}</button></div>`+
+        `<div class="field" style="margin-bottom:0"><label>${tr("language")}</label><div style="display:flex;gap:8px;margin-top:6px"><button class="pill" id="s-lang-en" aria-pressed="${lang==="en"}">${tr("lang_en")}</button><button class="pill" id="s-lang-ko" aria-pressed="${lang==="ko"}">${tr("lang_ko")}</button></div></div>`+
       `</div>`+
     `</div>`+
 
@@ -1417,12 +1415,10 @@ async function openFullSettings(openSection){
   document.getElementById("s-close").onclick=confirmClose;
 
   document.querySelectorAll(".acct-edit-btn[data-id]").forEach(b=>b.onclick=()=>openAccountEdit(b.dataset.id));
-  document.getElementById("s-newacct-cur").value=acct()?.currency||"USD";
   document.getElementById("s-addacct").onclick=async()=>{
     const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");
-    const c=document.getElementById("s-newacct-cur").value;
     const id=uid();
-    meta.accounts.push({id,name:v,currency:c});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);
+    meta.accounts.push({id,name:v,currency:acct()?.currency||"USD"});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);
   };
   if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};};
 
@@ -1444,8 +1440,6 @@ async function openFullSettings(openSection){
     };
     setTimeout(()=>document.getElementById("s-newpw").focus(),60);
   };
-
-  document.getElementById("s-cur").onclick=()=>{closeModal();openCurrencyMenu();};
 
   document.getElementById("s-signout").onclick=()=>{
     fetch("/api/signout",{method:"POST"}).then(()=>{location.href="/signin";});
