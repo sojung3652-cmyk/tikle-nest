@@ -911,7 +911,7 @@ let entrySort="date",entryFilter="all",entryCatSel=[],entryExpanded=false,sortOp
 function monthKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
 function monthLabel(k){const[y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"long",year:"numeric"});}
 function uid(){return crypto.randomUUID?crypto.randomUUID():"id"+Date.now()+Math.random().toString(16).slice(2);}
-function cur(){return CUR[meta.currency]||CUR.USD;}
+function cur(){return CUR[acct()?.currency]||CUR.USD;}
 function fmt(n){const c=cur();return c.sym+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:c.dec,maximumFractionDigits:c.dec});}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 function acct(){return meta.accounts.find(a=>a.id===meta.currentAccountId)||meta.accounts[0];}
@@ -985,10 +985,10 @@ function render(){
   document.getElementById("cur-sym").textContent=c.sym;
   document.getElementById("cur-sym2").textContent=c.sym;
   document.getElementById("fuel-cur").textContent=c.sym;
-  document.getElementById("change-cur").textContent=c.sym+" "+meta.currency+" ▾";
+  document.getElementById("change-cur").textContent=c.sym+" "+(acct()?.currency||"USD")+" ▾";
 
   const pills=document.getElementById("acct-pills");
-  pills.innerHTML=meta.accounts.map(a=>`<button class="pill" data-id="${a.id}" aria-pressed="${a.id===meta.currentAccountId}">${a.lock?"🔒 ":""}${esc(a.name)}</button>`).join("")+`<button class="pill add" id="add-acct">${tr("account_add")}</button>`;
+  pills.innerHTML=meta.accounts.map(a=>`<button class="pill" data-id="${a.id}" aria-pressed="${a.id===meta.currentAccountId}">${a.lock?"🔒 ":""}${esc(a.name)} · ${a.currency||"USD"}</button>`).join("")+`<button class="pill add" id="add-acct">${tr("account_add")}</button>`;
   pills.querySelectorAll(".pill[data-id]").forEach(b=>b.onclick=()=>switchAccount(b.dataset.id));
   document.getElementById("add-acct").onclick=openAddAccount;
 
@@ -1280,7 +1280,7 @@ async function analyzeFuel(recs){
   btn.disabled=true;document.getElementById("fuel-analyze-lbl").innerHTML=`<span class="spinner"></span> ${tr("analyzing_fuel_lbl")}`;
   body.innerHTML=`<span style="color:var(--ink-soft)">${tr("looking_at_fillups")}</span>`;
   const lines=recs.map(e=>{const f=e.fuel;const vol=(f.price>0&&e.amount>0)?round1(e.amount/f.price):null;const mpg=(vol&&f.distance>0)?round1(f.distance/vol):null;const u=f.unit==="gal"?"gal":"L";const du=f.unit==="gal"?"mi":"km";const eu=f.unit==="gal"?"mpg":"km/L";return `${e.date} | total ${fmt(e.amount)} | ${fmt(f.price)}/${u}${vol?` | ${vol} ${u}`:""}${f.distance?` | ${f.distance} ${du}`:""}${mpg?` | ${mpg} ${eu}`:""}`;}).join("\n");
-  const prompt=`You are a helpful assistant reviewing fuel purchases for a household car, in ${CUR_NAMES[meta.currency]||meta.currency}. Records:\n${lines}\n\nWrite a short, friendly summary (about 110 words, plain text, no headings or bullet symbols): total fuel spend, the average fuel efficiency and whether it seems to be trending up or down, and 2 practical tips to spend less on fuel or improve efficiency. Use the real numbers. Respond in ${lang==="ko"?"Korean":"English"}.`;
+  const acctCur=acct()?.currency||"USD";const prompt=`You are a helpful assistant reviewing fuel purchases for a household car, in ${CUR_NAMES[acctCur]||acctCur}. Records:\n${lines}\n\nWrite a short, friendly summary (about 110 words, plain text, no headings or bullet symbols): total fuel spend, the average fuel efficiency and whether it seems to be trending up or down, and 2 practical tips to spend less on fuel or improve efficiency. Use the real numbers. Respond in ${lang==="ko"?"Korean":"English"}.`;
   try{const txt=await callClaude(prompt);body.innerHTML="<p>"+esc(txt).replace(/\n{2,}/g,"</p><p>").replace(/\n/g,"<br>")+"</p>";}
   catch(e){body.innerHTML=`<span style="color:var(--ink-soft)">${tr("couldnt_fuel")}</span>`;}
   finally{btn.disabled=false;document.getElementById("fuel-analyze-lbl").textContent=tr("get_fuel_advice");}
@@ -1291,7 +1291,7 @@ async function openFullSettings(openSection){
   let inviteCode="";
   try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
   const user=window.__TN_USER__||{};
-  const curCur=meta.currency||"USD";
+  const curCur=acct()?.currency||"USD";
   // Snapshot original values for dirty detection
   const origHHName=meta.name||"";
   const origAccNames={};meta.accounts.forEach(a=>origAccNames[a.id]=a.name);
@@ -1306,7 +1306,7 @@ async function openFullSettings(openSection){
       `<div class="set-acc-body" id="sacc-bd-1">`+
         `<div class="field"><label for="s-name">${tr("household_name_label")}</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/></div>`+
         `<div class="field"><label>${tr("accounts_label")}</label><div class="acct-manage" id="s-acct">${accRows}</div></div>`+
-        `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
+        `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><select id="s-newacct-cur" style="flex-shrink:0;padding:0 8px;border:1px solid var(--mist);border-radius:10px;font-size:13px;background:var(--bg);color:var(--ink)">${Object.keys(CUR).map(k=>`<option value="${k}">${k}</option>`).join("")}</select><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
         `<button class="btn-secondary" id="s-lock" style="width:100%;justify-content:center;margin-bottom:${inviteCode?10:0}px">${acct().lock?tr("manage_password",esc(acct().name)):tr("lock_account",esc(acct().name))}</button>`+
         (inviteCode?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`:"")+
       `</div>`+
@@ -1416,7 +1416,8 @@ async function openFullSettings(openSection){
 
   document.querySelectorAll("#s-acct button[data-del]").forEach(b=>b.onclick=()=>deleteAccount(b.dataset.del));
   document.getElementById("s-lock").onclick=openLockForm;
-  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");const id=uid();meta.accounts.push({id,name:v});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);};
+  document.getElementById("s-newacct-cur").value=acct()?.currency||"USD";
+  document.getElementById("s-addacct").onclick=async()=>{const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");const c=document.getElementById("s-newacct-cur").value;const id=uid();meta.accounts.push({id,name:v,currency:c});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);};
   if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};};
 
   document.getElementById("s-lang-en").onclick=()=>setLang("en");
@@ -1659,7 +1660,7 @@ async function recommendNecessity(){
   const memo=document.getElementById("memo").value.trim();
   const rn=document.getElementById("rec-note");
   rn.className="rec-note show";rn.innerHTML=`<span class="spinner" style="width:12px;height:12px"></span> ${tr("thinking")}`;
-  const prompt=`Classify this household expense as either a necessity or discretionary ("could save"). Item: ${note||"(none given)"}. Category: ${category}. Amount: ${amount||"(unknown)"} ${meta.currency}. Note: ${memo||"(none)"}. Respond with ONLY a JSON object, no markdown: {"necessary": <true or false>, "reason": "<6 to 12 words in ${lang==="ko"?"Korean":"English"}>"}. `;
+  const prompt=`Classify this household expense as either a necessity or discretionary ("could save"). Item: ${note||"(none given)"}. Category: ${category}. Amount: ${amount||"(unknown)"} ${acct()?.currency||"USD"}. Note: ${memo||"(none)"}. Respond with ONLY a JSON object, no markdown: {"necessary": <true or false>, "reason": "<6 to 12 words in ${lang==="ko"?"Korean":"English"}>"}. `;
   try{
     const txt=await callClaude(prompt);const data=JSON.parse(txt.replace(/```json|```/g,"").trim());
     setMode(data.necessary?"nec":"opt");
@@ -1749,13 +1750,19 @@ function openLockForm(){
 }
 /* ---------- accounts ---------- */
 function openAddAccount(){
+  const curOpts=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k].sym}  ${CUR_NAMES[k]} (${k})</option>`).join("");
+  const curLbl=lang==="ko"?"통화":"Currency";
   openModal(`<h3>${tr("new_account")}</h3><p>${tr("new_account_desc")}</p>
     <div class="field"><label for="m-acct">${tr("account_name_lbl")}</label><input type="text" id="m-acct" placeholder="${tr("account_name_ph2")}" /></div>
+    <div class="field"><label for="m-acct-cur">${curLbl}</label><select id="m-acct-cur">${curOpts}</select></div>
     <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="m-acct-save">${tr("create")}</button></div>`);
+  document.getElementById("m-acct-cur").value=acct()?.currency||"USD";
   setTimeout(()=>document.getElementById("m-acct").focus(),50);
   document.getElementById("m-acct-save").onclick=async()=>{
-    const name=document.getElementById("m-acct").value.trim()||tr("new_account");const id=uid();
-    meta.accounts.push({id,name});meta.currentAccountId=id;await saveMeta();closeModal();resetAnalysis();render();toast(tr("account_added"));
+    const name=document.getElementById("m-acct").value.trim()||tr("new_account");
+    const currency=document.getElementById("m-acct-cur").value;
+    const id=uid();
+    meta.accounts.push({id,name,currency});meta.currentAccountId=id;await saveMeta();closeModal();resetAnalysis();render();toast(tr("account_added"));
   };
   document.getElementById("m-acct").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("m-acct-save").click();});
 }
@@ -1863,28 +1870,31 @@ function openGoal(){
 /* ---------- currency ---------- */
 function openCurrencyMenu(){
   const opts=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k].sym}  ${CUR_NAMES[k]} (${k})</option>`).join("");
-  const curHdr=lang==="ko"?"통화":"Currency";const curDesc=lang==="ko"?"전체 가계부의 통화를 변경합니다.":"Change the currency for your whole ledger.";
+  const curHdr=lang==="ko"?"통화":"Currency";const acctName=esc(acct()?.name||"");
+  const curDesc=lang==="ko"?`"${acctName}" 계정의 통화를 변경합니다.`:`Change the currency for the "${acctName}" account.`;
+  const acctCur=acct()?.currency||"USD";
   openModal(`<h3>${curHdr}</h3><p>${curDesc}</p>
     <div class="field"><label for="cur-sel">${curHdr}</label><select id="cur-sel">${opts}</select></div>
     <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="cur-cont">${lang==="ko"?"계속":"Continue"}</button></div>`);
-  document.getElementById("cur-sel").value=meta.currency;
-  document.getElementById("cur-cont").onclick=()=>{const nc=document.getElementById("cur-sel").value;closeModal();if(nc!==meta.currency)setTimeout(()=>openConvertChoice(nc),40);};
+  document.getElementById("cur-sel").value=acctCur;
+  document.getElementById("cur-cont").onclick=()=>{const nc=document.getElementById("cur-sel").value;closeModal();if(nc!==acctCur)setTimeout(()=>openConvertChoice(nc),40);};
 }
 function openConvertChoice(newCur){
-  const oldCur=meta.currency;const rate=+(CUR[newCur].usd/CUR[oldCur].usd).toFixed(6);const dec=CUR[newCur].dec;
+  const oldCur=acct()?.currency||"USD";const rate=+(CUR[newCur].usd/CUR[oldCur].usd).toFixed(6);const dec=CUR[newCur].dec;
+  const acctId=meta.currentAccountId;
   openModal(`<h3>Switch to ${CUR_NAMES[newCur]}?</h3><p>Apply today's exchange rate to every existing amount so they keep their real value? You can edit the rate first.</p>
     <div class="rate-line">1 ${oldCur} = <input type="number" id="m-rate" value="${rate}" step="any" min="0"/> ${newCur}</div>
     <p style="font-size:12.5px;color:var(--ink-faint);margin:0;">Rates are approximate. "Just change symbol" keeps the numbers exactly as they are.</p>
     <div class="modal-actions"><button class="ghost" id="m-cur-cancel">Cancel</button><button class="ghost" id="m-cur-symbol">Just change symbol</button><button class="primary" id="m-cur-convert">Convert amounts</button></div>`);
   document.getElementById("m-cur-cancel").onclick=closeModal;
-  document.getElementById("m-cur-symbol").onclick=async()=>{meta.currency=newCur;await saveMeta();closeModal();render();toast(lang==="ko"?"통화가 변경되었습니다":"Currency updated");};
+  document.getElementById("m-cur-symbol").onclick=async()=>{acct().currency=newCur;await saveMeta();closeModal();render();toast(lang==="ko"?"통화가 변경되었습니다":"Currency updated");};
   document.getElementById("m-cur-convert").onclick=async()=>{
     const r=parseFloat(document.getElementById("m-rate").value)||rate;const round=n=>dec===0?Math.round(n*r):Math.round(n*r*100)/100;
-    entries.forEach(e=>{e.amount=round(e.amount);if(e.partial&&e.necAmount)e.necAmount=round(e.necAmount);});
-    Object.keys(meta.budgets).forEach(k=>meta.budgets[k]=round(meta.budgets[k]));
-    if(meta.goals)Object.keys(meta.goals).forEach(k=>{if(meta.goals[k]&&meta.goals[k].target)meta.goals[k].target=round(meta.goals[k].target);});
-    if(meta.recurring)meta.recurring.forEach(t=>t.amount=round(t.amount));
-    meta.currency=newCur;await saveEntries();await saveMeta();closeModal();resetAnalysis();render();toast(lang==="ko"?`${newCur}로 변환되었습니다`:"Converted to "+newCur);
+    entries.filter(e=>e.accountId===acctId).forEach(e=>{e.amount=round(e.amount);if(e.partial&&e.necAmount)e.necAmount=round(e.necAmount);});
+    Object.keys(meta.budgets).filter(k=>k.startsWith(acctId+":")).forEach(k=>meta.budgets[k]=round(meta.budgets[k]));
+    if(meta.goals)Object.keys(meta.goals).filter(k=>k.startsWith(acctId+":")).forEach(k=>{if(meta.goals[k]&&meta.goals[k].target)meta.goals[k].target=round(meta.goals[k].target);});
+    if(meta.recurring)meta.recurring.filter(t=>t.accountId===acctId).forEach(t=>t.amount=round(t.amount));
+    acct().currency=newCur;await saveEntries();await saveMeta();closeModal();resetAnalysis();render();toast(lang==="ko"?`${newCur}로 변환되었습니다`:"Converted to "+newCur);
   };
 }
 
@@ -1931,8 +1941,8 @@ function onboarding(){
   document.getElementById("ob-start").onclick=async()=>{
     if(obAccounts.length===0){const v=document.getElementById("ob-acct").value.trim();obAccounts.push(v||"Main");}
     const c=document.getElementById("ob-cur").value;
-    const accs=obAccounts.map(n=>({id:uid(),name:n}));
-    meta={currency:c,name:"",accounts:accs,currentAccountId:accs[0].id,budgets:{},goals:{},recurring:[],recurSkips:{}};
+    const accs=obAccounts.map(n=>({id:uid(),name:n,currency:c}));
+    meta={name:"",accounts:accs,currentAccountId:accs[0].id,budgets:{},goals:{},recurring:[],recurSkips:{}};
     await saveMeta();closeModal();render();
   };
 }
@@ -1976,7 +1986,7 @@ function buildBudgetContext(){
   const entLines=ents.map(e=>{const s=split(e);return `  ${e.date} | ${e.category} | ${e.partial?"partial(nec:"+fmt(s.nec)+",save:"+fmt(s.opt)+")":e.necessary?"nec":"save"} | ${fmt(e.amount)} | ${e.note||""}${e.memo?" — "+e.memo:""}`;}).join("\n");
   const recLines=recurring.map(t=>`  ${t.name} | ${t.category} | ${fmt(t.amount)} | ${t.necessary?"nec":"save"}`).join("\n");
   return [
-    `Account: "${acct().name}" | Month: ${monthLabel(currentMonth)} | Language: ${lang==="ko"?"Korean":"English"} | Currency: ${CUR_NAMES[meta.currency]||meta.currency}`,
+    `Account: "${acct().name}" | Month: ${monthLabel(currentMonth)} | Language: ${lang==="ko"?"Korean":"English"} | Currency: ${CUR_NAMES[acct()?.currency||"USD"]||acct()?.currency||"USD"}`,
     `Budget: ${budget>0?fmt(budget):"not set"} | Spent: ${fmt(spent)} | Necessary: ${fmt(nec)} | Could-save: ${fmt(opt)}${budget>0?" | Remaining: "+fmt(budget-spent):""}`,
     pace,
     `Income this month: ${incTotal>0?fmt(incTotal):"none recorded"}`,
@@ -2102,7 +2112,7 @@ function showAccountSelect(){
     const cur=a.id===meta.currentAccountId;
     const sub=locked?tr("private_locked"):a.lock&&unlocked.has(a.id)?tr("private_unlocked"):tr("shared");
     return `<button class="aso-card${cur?" aso-cur":""}" data-id="${a.id}" type="button">`+
-      `<div><div class="aso-card-name">${esc(a.name)}</div><div class="aso-card-sub">${sub}</div></div>`+
+      `<div><div class="aso-card-name">${esc(a.name)} · ${a.currency||"USD"}</div><div class="aso-card-sub">${sub}</div></div>`+
       (locked?'<span class="aso-lock">🔒</span>':'')+
     `</button>`;
   }).join("");
@@ -2143,7 +2153,10 @@ function initStatic(){
 async function init(){
   initStatic();
   await load();
-  if(meta){meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};}
+  if(meta){
+    meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};
+    if(meta.currency){const fallback=meta.currency;meta.accounts.forEach(a=>{if(!a.currency)a.currency=fallback;});delete meta.currency;saveMeta();}
+  }
   if(!meta){onboarding();}
 
   document.getElementById("prev").onclick=()=>shiftMonth(-1);
