@@ -28,13 +28,35 @@ export async function GET() {
   const householdId = await getActiveHouseholdId(supabase, user.id);
   if (!householdId) return NextResponse.json([]);
 
-  const { data: members } = await supabase
+  // Base query — only columns guaranteed to exist in the schema
+  const { data: members, error: membersErr } = await supabase
     .from("household_members")
-    .select("user_id, role, display_name, joined_at")
+    .select("user_id, role, joined_at")
     .eq("household_id", householdId)
     .order("joined_at", { ascending: true });
 
-  return NextResponse.json(members ?? []);
+  if (membersErr || !members) return NextResponse.json([]);
+
+  // Try to fetch display_name separately (only available after migration)
+  const displayNames: Record<string, string> = {};
+  const { data: nameRows, error: nameErr } = await supabase
+    .from("household_members")
+    .select("user_id, display_name")
+    .eq("household_id", householdId);
+
+  if (!nameErr) {
+    for (const row of nameRows ?? []) {
+      const dn = (row as { user_id: string; display_name?: string }).display_name;
+      if (dn) displayNames[row.user_id] = dn;
+    }
+  }
+
+  const result = members.map((m: { user_id: string; role: string; joined_at: string }) => ({
+    ...m,
+    display_name: displayNames[m.user_id] ?? null,
+  }));
+
+  return NextResponse.json(result);
 }
 
 // DELETE /api/household/members  body: { userId }

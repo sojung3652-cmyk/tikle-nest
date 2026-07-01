@@ -29,9 +29,16 @@ export async function POST(req: NextRequest) {
       (user.user_metadata?.display_name as string | undefined) ||
       user.email?.split("@")[0] ||
       "Member";
-    const { error } = await supabase
+    // Try with display_name (works after migration); fall back without it
+    let { error } = await supabase
       .from("household_members")
       .insert({ household_id: hh.id, user_id: user.id, role: "member", display_name: memberDisplayName });
+    if (error) {
+      const retry = await supabase
+        .from("household_members")
+        .insert({ household_id: hh.id, user_id: user.id, role: "member" });
+      error = retry.error;
+    }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

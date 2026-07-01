@@ -14,13 +14,14 @@ export async function GET() {
   const cookieStore = await cookies();
   const preferred = cookieStore.get("tn-household")?.value;
 
-  // All memberships for this user
-  const { data: memberships } = await supabase
+  // Only select columns guaranteed to exist in the base schema (no display_name —
+  // that column requires the add-member-visibility migration to be applied first).
+  const { data: memberships, error: membershipsErr } = await supabase
     .from("household_members")
-    .select("household_id, role, display_name")
+    .select("household_id, role")
     .eq("user_id", user.id);
 
-  if (!memberships?.length) return NextResponse.json([]);
+  if (membershipsErr || !memberships?.length) return NextResponse.json([]);
 
   const ids = memberships.map((m: { household_id: string }) => m.household_id);
   const resolvedActive = (preferred && ids.includes(preferred)) ? preferred : ids[0];
@@ -48,25 +49,27 @@ export async function GET() {
 
   // For households where this user is a member (not owner), look up the
   // owner's display_name so the UI can show "Joined · <owner name>".
-  // This only works after the RLS migration has been applied.
+  // This only works after the RLS migration has been applied — handle gracefully.
   const memberHhIds = memberships
     .filter((m: { role: string }) => m.role !== "owner")
     .map((m: { household_id: string }) => m.household_id);
 
   const ownerNames: Record<string, string | null> = {};
   if (memberHhIds.length > 0) {
-    const { data: ownerRows } = await supabase
+    const { data: ownerRows, error: ownerErr } = await supabase
       .from("household_members")
       .select("household_id, display_name")
       .in("household_id", memberHhIds)
       .eq("role", "owner");
 
-    for (const row of ownerRows ?? []) {
-      ownerNames[row.household_id] = row.display_name || null;
+    if (!ownerErr) {
+      for (const row of ownerRows ?? []) {
+        ownerNames[row.household_id] = (row as { household_id: string; display_name?: string }).display_name || null;
+      }
     }
   }
 
-  const results = memberships.map((m: { household_id: string; role: string; display_name?: string }) => {
+  const results = memberships.map((m: { household_id: string; role: string }) => {
     const parsed = metaMap[m.household_id];
     const accounts = (parsed?.accounts ?? []).map((a) => ({
       id: a.id,
