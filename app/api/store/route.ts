@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 async function getHouseholdId(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
-  const { data } = await supabase
+  const cookieStore = await cookies();
+  const preferred = cookieStore.get("tn-household")?.value;
+
+  const { data: memberships } = await supabase
     .from("household_members")
     .select("household_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return data?.household_id ?? null;
+    .eq("user_id", userId);
+
+  const ids = (memberships ?? []).map((m: { household_id: string }) => m.household_id);
+  if (ids.length === 0) return null;
+  if (preferred && ids.includes(preferred)) return preferred;
+  return ids[0];
 }
 
 // GET /api/store?k=KEY → {key, value} | null

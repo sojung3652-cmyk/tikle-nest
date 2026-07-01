@@ -317,6 +317,12 @@
   .set-signout:hover{background:var(--over);color:#fff;border-color:var(--over);}
   .aso-welcome{font-size:22px;font-weight:600;color:var(--ink);margin:0 0 4px;text-align:center;}
   .aso-sub{font-size:14px;color:var(--ink-soft);margin:0 0 24px;text-align:center;}
+  .aso-hh-wrap{margin-bottom:18px;text-align:center;}
+  .aso-hh-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px;}
+  .aso-hh-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
+  .aso-hh-btn{border:1px solid var(--mist);background:var(--paper);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-soft);transition:.15s;}
+  .aso-hh-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .aso-hh-btn:hover:not(.active){border-color:var(--accent);color:var(--accent);}
 
   /* ── budget buddy ── */
   .bb-section{background:var(--card);border:1px solid var(--mist);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;}
@@ -545,6 +551,7 @@
     </div>
     <p class="aso-welcome" id="aso-welcome"></p>
     <p class="aso-sub">Choose an account to manage</p>
+    <div id="aso-hh-switch" style="display:none"></div>
     <div class="aso-cards" id="aso-cards"></div>
   </div>
 </div>
@@ -906,6 +913,7 @@ const CAR_MODELS=["Toyota","Toyota Camry","Toyota Corolla","Toyota RAV4","Toyota
 "Cadillac","Cadillac Escalade","Cadillac XT5","Cadillac XT4"];
 let meta=null;
 let entries=[];
+let households=[];
 let currentMonth=monthKey(new Date());
 let pendingMode="nec";       /* 'nec' | 'opt' | 'partial' */
 let pendingPhoto=null;
@@ -924,8 +932,32 @@ function hashCode(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCod
 let unlocked=new Set();
 function bkey(){return meta.currentAccountId+":"+currentMonth;}
 function acctEntries(){return entries.filter(e=>e.accountId===meta.currentAccountId);}
-function monthEntries(){return acctEntries().filter(e=>e.date.startsWith(currentMonth)&&e.type!=="income");}
-function monthIncome(){return acctEntries().filter(e=>e.date.startsWith(currentMonth)&&e.type==="income");}
+
+/* --- salary-period helpers --- */
+function salaryDay(){return meta?Math.max(1,Math.min(28,parseInt(acct()?.salaryDay)||1)):1;}
+function periodStart(mk){const sd=salaryDay();const[y,m]=mk.split("-").map(Number);return sd<=1?new Date(y,m-1,1):new Date(y,m-1,sd);}
+function periodEnd(mk){const sd=salaryDay();const[y,m]=mk.split("-").map(Number);return sd<=1?new Date(y,m,0):new Date(y,m,sd-1);}
+function inPeriod(dateStr,mk){
+  const sd=salaryDay();
+  if(sd<=1)return dateStr.startsWith(mk);
+  const d=new Date(dateStr+"T00:00:00");
+  return d>=periodStart(mk)&&d<=periodEnd(mk);
+}
+function periodLabel(mk){
+  const sd=salaryDay();if(sd<=1)return monthLabel(mk);
+  const start=periodStart(mk);const end=periodEnd(mk);
+  const lo=lang==="ko"?"ko-KR":"en-US";
+  const fmtD=d=>d.toLocaleDateString(lo,{month:"short",day:"numeric"});
+  return fmtD(start)+" – "+fmtD(end);
+}
+function currentMonthForToday(){
+  const sd=salaryDay();const today=new Date();
+  if(sd<=1)return monthKey(today);
+  return today.getDate()>=sd?monthKey(today):monthKey(new Date(today.getFullYear(),today.getMonth()-1,1));
+}
+
+function monthEntries(){return acctEntries().filter(e=>inPeriod(e.date,currentMonth)&&e.type!=="income");}
+function monthIncome(){return acctEntries().filter(e=>inPeriod(e.date,currentMonth)&&e.type==="income");}
 function split(e){
   if(e.partial){const nec=Math.max(0,Math.min(e.necAmount||0,e.amount));return{nec,opt:e.amount-nec};}
   return e.necessary?{nec:e.amount,opt:0}:{nec:0,opt:e.amount};
@@ -942,17 +974,24 @@ async function load(){
 /* ---------- recurring ---------- */
 function ensureRecurring(){
   if(!meta.recurring)return;
-  const M=currentMonth,accId=meta.currentAccountId;let created=false;
-  meta.recurring.filter(t=>t.accountId===accId).forEach(t=>{
-    if(t.startMonth&&M<t.startMonth)return;
-    if(t.endDate&&M>t.endDate.slice(0,7))return;
-    const sk=accId+":"+M+":"+t.id;
-    if(meta.recurSkips&&meta.recurSkips[sk])return;
-    if(entries.some(e=>e.accountId===accId&&e.recurringId===t.id&&e.date.startsWith(M)))return;
-    const day=String(Math.min(Math.max(t.billingDay||1,1),28)).padStart(2,"0");
-    entries.push({id:uid(),accountId:accId,recurringId:t.id,isRecurring:true,type:"expense",amount:t.amount,
-      note:t.name,category:t.category,date:M+"-"+day,necessary:t.necessary,partial:false,memo:"",hasPhoto:false,created:Date.now()});
-    created=true;
+  const M=currentMonth,accId=meta.currentAccountId,sd=salaryDay();let created=false;
+  // For salary periods that cross calendar months, check both calendar months
+  const[y,m]=M.split("-").map(Number);
+  const calMonths=sd>1?[M,monthKey(new Date(y,m,1))]:[M];
+  calMonths.forEach(calM=>{
+    meta.recurring.filter(t=>t.accountId===accId).forEach(t=>{
+      if(t.startMonth&&calM<t.startMonth)return;
+      if(t.endDate&&calM>t.endDate.slice(0,7))return;
+      const sk=accId+":"+calM+":"+t.id;
+      if(meta.recurSkips&&meta.recurSkips[sk])return;
+      if(entries.some(e=>e.accountId===accId&&e.recurringId===t.id&&e.date.startsWith(calM)))return;
+      const day=String(Math.min(Math.max(t.billingDay||1,1),28)).padStart(2,"0");
+      const entryDate=calM+"-"+day;
+      if(!inPeriod(entryDate,M))return;
+      entries.push({id:uid(),accountId:accId,recurringId:t.id,isRecurring:true,type:"expense",amount:t.amount,
+        note:t.name,category:t.category,date:entryDate,necessary:t.necessary,partial:false,memo:"",hasPhoto:false,created:Date.now()});
+      created=true;
+    });
   });
   if(created)saveEntries();
 }
@@ -986,7 +1025,7 @@ function render(){
   ensureRecurring();
   const c=cur();
   document.getElementById("acct-sub").textContent=(meta.name?.trim()?meta.name.trim()+" · ":" ")+(acct()?tr("viewing",acct().name):"");
-  document.getElementById("month-label").textContent=monthLabel(currentMonth);
+  document.getElementById("month-label").textContent=periodLabel(currentMonth);
   document.getElementById("cur-sym").textContent=c.sym;
   document.getElementById("cur-sym2").textContent=c.sym;
   document.getElementById("fuel-cur").textContent=c.sym;
@@ -1326,6 +1365,7 @@ async function openFullSettings(openSection){
         `<div class="field" style="margin-bottom:10px"><label>${tr("accounts_label")}</label><div class="acct-list">${accRows}</div></div>`+
         `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
         (inviteCode?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`:"")+
+        `<button class="btn-secondary" id="s-join-hh" style="width:100%;justify-content:center;margin-top:10px">${lang==="ko"?"다른 가계 참여":"Join another household"}</button>`+
       `</div>`+
     `</div>`+
 
@@ -1420,7 +1460,33 @@ async function openFullSettings(openSection){
     const id=uid();
     meta.accounts.push({id,name:v,currency:acct()?.currency||"USD"});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);
   };
-  if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};};
+  if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};}
+  document.getElementById("s-join-hh").onclick=()=>{
+    const joinHdr=lang==="ko"?"가계 참여":"Join a household";
+    const joinDesc=lang==="ko"?"파트너나 가족의 초대 코드를 입력하세요.":"Enter the invite code from your partner or family member.";
+    const joinLbl=lang==="ko"?"초대 코드":"Invite code";
+    const joinBtn=lang==="ko"?"참여하기":"Join";
+    openModal(`<h3>${joinHdr}</h3><p>${joinDesc}</p>`+
+      `<div class="field"><label>${joinLbl}</label><input type="text" id="m-join-code" placeholder="ABC123" style="text-transform:uppercase;letter-spacing:.1em" autocomplete="off"/></div>`+
+      `<div class="modal-actions"><button class="ghost" id="m-join-cancel">${tr("cancel")}</button><button class="primary" id="m-join-go">${joinBtn}</button></div>`);
+    document.getElementById("m-join-cancel").onclick=()=>openFullSettings(1);
+    const doJoin=async()=>{
+      const code=document.getElementById("m-join-code").value.trim().toUpperCase();
+      if(!code)return;
+      const btn=document.getElementById("m-join-go");btn.disabled=true;btn.textContent=lang==="ko"?"처리 중…":"Joining…";
+      try{
+        const r=await fetch("/api/household/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code})});
+        const d=await r.json();
+        if(!r.ok||d.error){toast(d.error||(lang==="ko"?"코드를 확인해 주세요":"Check the code and try again"));btn.disabled=false;btn.textContent=joinBtn;return;}
+        await fetch("/api/household/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({householdId:d.id})});
+        toast((lang==="ko"?"가계에 참여했습니다: ":"Joined: ")+d.name);
+        setTimeout(()=>location.reload(),1000);
+      }catch(e){toast(lang==="ko"?"오류가 발생했습니다":"Something went wrong");btn.disabled=false;btn.textContent=joinBtn;}
+    };
+    document.getElementById("m-join-go").onclick=doJoin;
+    document.getElementById("m-join-code").addEventListener("keydown",e=>{if(e.key==="Enter")doJoin();});
+    setTimeout(()=>document.getElementById("m-join-code").focus(),60);
+  };
 
   document.getElementById("s-lang-en").onclick=()=>setLang("en");
   document.getElementById("s-lang-ko").onclick=()=>setLang("ko");
@@ -1453,6 +1519,8 @@ function openAccountEdit(id){
   const curOpts=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k].sym}  ${CUR_NAMES[k]} (${k})</option>`).join("");
   const curLbl=lang==="ko"?"통화":"Currency";
   const nameLbl=lang==="ko"?"계정 이름":"Account name";
+  const sdLbl=lang==="ko"?"급여일":"Salary day";
+  const sdDesc=lang==="ko"?"급여일을 설정하면 해당 날짜~다음 달 전날이 한 달 예산 기간이 됩니다. 1 = 일반 달력 기준":"Sets pay cycle start. Day 21 = 21st–20th of next month. 1 = regular calendar month.";
   const lockLbl=(locked?tr("manage_lock"):tr("lock_account_hdr"))+" — "+esc(a.name);
   const lockIcon=locked?"🔒 ":"";
   const delLbl=lang==="ko"?"계정 삭제":"Delete account";
@@ -1463,6 +1531,7 @@ function openAccountEdit(id){
     `</div>`+
     `<div class="field"><label for="ae-name">${nameLbl}</label><input type="text" id="ae-name" value="${esc(a.name)}"/></div>`+
     `<div class="field"><label for="ae-cur">${curLbl}</label><select id="ae-cur">${curOpts}</select></div>`+
+    `<div class="field"><label for="ae-sd">${sdLbl}</label><input type="number" id="ae-sd" min="1" max="28" value="${a.salaryDay||1}" style="width:80px"/><div style="font-size:12px;color:var(--ink-soft);margin-top:4px">${sdDesc}</div></div>`+
     `<button class="btn-secondary" id="ae-lock" style="width:100%;justify-content:center;margin-bottom:8px">${lockIcon}${lockLbl}</button>`+
     (meta.accounts.length>1?`<button class="btn-secondary" id="ae-del" style="width:100%;justify-content:center;border-color:var(--over-soft);background:var(--over-soft);color:var(--over-text);margin-bottom:0">${delLbl}</button>`:"")+
     `<button class="primary" id="ae-save" style="width:100%;margin-top:12px">${tr("save")}</button>`+
@@ -1475,12 +1544,17 @@ function openAccountEdit(id){
   document.getElementById("ae-lock").onclick=async()=>{
     const nm=document.getElementById("ae-name").value.trim();if(nm)a.name=nm;
     const c=document.getElementById("ae-cur").value;a.currency=c;
+    const sd=Math.max(1,Math.min(28,parseInt(document.getElementById("ae-sd").value)||1));
+    if(sd===1)delete a.salaryDay;else a.salaryDay=sd;
     await saveMeta();render();openLockForm(id);
   };
   if(meta.accounts.length>1)document.getElementById("ae-del").onclick=()=>deleteAccount(id);
   document.getElementById("ae-save").onclick=async()=>{
     const nm=document.getElementById("ae-name").value.trim();if(nm)a.name=nm;
     a.currency=document.getElementById("ae-cur").value;
+    const sd=Math.max(1,Math.min(28,parseInt(document.getElementById("ae-sd").value)||1));
+    if(sd===1)delete a.salaryDay;else a.salaryDay=sd;
+    if(a.id===meta.currentAccountId)currentMonth=currentMonthForToday();
     await saveMeta();render();openFullSettings(1);toast(tr("saved"));
   };
   document.getElementById("ae-name").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("ae-save").click();});
@@ -1752,7 +1826,7 @@ function switchAccount(id){
   const a=meta.accounts.find(x=>x.id===id);
   if(a&&a.lock){promptUnlock(id);return;}
   unlocked.clear();
-  meta.currentAccountId=id;saveMeta();resetAnalysis();render();
+  meta.currentAccountId=id;currentMonth=currentMonthForToday();saveMeta();resetAnalysis();render();
 }
 function promptUnlock(id){
   const a=meta.accounts.find(x=>x.id===id);
@@ -2009,31 +2083,32 @@ function buildBudgetContext(){
   const ents=monthEntries();
   const[cy,cm]=currentMonth.split("-").map(Number);
   const lastM=monthKey(new Date(cy,cm-2,1));
-  const lastEnts=entries.filter(e=>e.accountId===meta.currentAccountId&&e.date.startsWith(lastM)&&e.type!=="income");
+  const lastEnts=entries.filter(e=>e.accountId===meta.currentAccountId&&inPeriod(e.date,lastM)&&e.type!=="income");
   const budget=meta.budgets[bkey()]||0;
   const incTotal=monthIncome().reduce((s,e)=>s+e.amount,0);
   const goal=(meta.goals&&meta.goals[bkey()])||null;
   const recurring=(meta.recurring||[]).filter(t=>t.accountId===meta.currentAccountId);
   let nec=0,opt=0;ents.forEach(e=>{const s=split(e);nec+=s.nec;opt+=s.opt;});
   const spent=nec+opt;
-  const today=new Date();const isNow=currentMonth===monthKey(today);
-  const daysInM=new Date(cy,cm,0).getDate();
-  const daysPassed=isNow?today.getDate():daysInM;
-  const daysLeft=isNow?daysInM-today.getDate():0;
-  const pace=isNow&&daysPassed>0?`Daily pace: ${fmt(spent/daysPassed)}/day · ${daysLeft} days left · projected: ${fmt(spent/daysPassed*daysInM)}`:"";
+  const today=new Date();const isNow=currentMonth===currentMonthForToday();
+  const pStart=periodStart(currentMonth);const pEnd=periodEnd(currentMonth);
+  const totalDays=Math.round((pEnd-pStart)/864e5)+1;
+  const daysPassed=isNow?Math.max(1,Math.round((today-pStart)/864e5)+1):totalDays;
+  const daysLeft=isNow?Math.max(0,totalDays-daysPassed):0;
+  const pace=isNow&&daysPassed>0?`Daily pace: ${fmt(spent/daysPassed)}/day · ${daysLeft} days left · projected: ${fmt(spent/daysPassed*totalDays)}`:"";
   const byCat={};ents.forEach(e=>byCat[e.category]=(byCat[e.category]||0)+e.amount);
   const catLines=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`  ${k}: ${fmt(v)}`).join("\n");
   let lastSpent=0;lastEnts.forEach(e=>lastSpent+=e.amount);
   const entLines=ents.map(e=>{const s=split(e);return `  ${e.date} | ${e.category} | ${e.partial?"partial(nec:"+fmt(s.nec)+",save:"+fmt(s.opt)+")":e.necessary?"nec":"save"} | ${fmt(e.amount)} | ${e.note||""}${e.memo?" — "+e.memo:""}`;}).join("\n");
   const recLines=recurring.map(t=>`  ${t.name} | ${t.category} | ${fmt(t.amount)} | ${t.necessary?"nec":"save"}`).join("\n");
   return [
-    `Account: "${acct().name}" | Month: ${monthLabel(currentMonth)} | Language: ${lang==="ko"?"Korean":"English"} | Currency: ${CUR_NAMES[acct()?.currency||"USD"]||acct()?.currency||"USD"}`,
+    `Account: "${acct().name}" | Period: ${periodLabel(currentMonth)} | Language: ${lang==="ko"?"Korean":"English"} | Currency: ${CUR_NAMES[acct()?.currency||"USD"]||acct()?.currency||"USD"}`,
     `Budget: ${budget>0?fmt(budget):"not set"} | Spent: ${fmt(spent)} | Necessary: ${fmt(nec)} | Could-save: ${fmt(opt)}${budget>0?" | Remaining: "+fmt(budget-spent):""}`,
     pace,
-    `Income this month: ${incTotal>0?fmt(incTotal):"none recorded"}`,
+    `Income this period: ${incTotal>0?fmt(incTotal):"none recorded"}`,
     `Goal: ${goal&&(goal.note||goal.target>0)?((goal.note||"")+(goal.target>0?` (save ${fmt(goal.target)})`:"")):"none set"}`,
-    `Last month (${monthLabel(lastM)}): ${lastSpent>0?fmt(lastSpent):"no data"}`,
-    ents.length>0?`\nCategory breakdown:\n${catLines}`:"No entries this month.",
+    `Last period (${periodLabel(lastM)}): ${lastSpent>0?fmt(lastSpent):"no data"}`,
+    ents.length>0?`\nCategory breakdown:\n${catLines}`:"No entries this period.",
     ents.length>0?`\nAll entries (${ents.length}):\n${entLines}`:"",
     recurring.length>0?`\nRecurring items:\n${recLines}`:"",
   ].filter(Boolean).join("\n");
@@ -2147,6 +2222,27 @@ function showAccountSelect(){
   const w=document.getElementById("aso-welcome");
   if(w){const n=(window.__TN_USER__||{}).name;w.textContent=n?tr("welcome",n):(lang==="ko"?"환영합니다!":"Welcome!");}
   const subEl=document.querySelector(".aso-sub");if(subEl)subEl.textContent=tr("choose_account");
+  // Household switcher (show only if user belongs to multiple households)
+  const hhWrap=document.getElementById("aso-hh-switch");
+  if(hhWrap){
+    if(households.length>1){
+      const hhLabel=lang==="ko"?"가계":"Household";
+      hhWrap.innerHTML=`<div class="aso-hh-wrap"><div class="aso-hh-label">${hhLabel}</div><div class="aso-hh-pills">`+
+        households.map(hh=>`<button class="aso-hh-btn${hh.isActive?" active":""}" data-hh="${hh.id}">${esc(hh.name)}</button>`).join("")+
+        `</div></div>`;
+      hhWrap.style.display="";
+      hhWrap.querySelectorAll("[data-hh]").forEach(b=>{
+        b.onclick=async()=>{
+          if(b.classList.contains("active"))return;
+          b.disabled=true;b.textContent=(lang==="ko"?"전환 중…":"Switching…");
+          await fetch("/api/household/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({householdId:b.dataset.hh})});
+          location.reload();
+        };
+      });
+    }else{
+      hhWrap.style.display="none";
+    }
+  }
   const c=document.getElementById("aso-cards");
   c.innerHTML=meta.accounts.map(a=>{
     const locked=a.lock&&!unlocked.has(a.id);
@@ -2177,6 +2273,7 @@ function asoSelect(id){
 }
 function asoEnter(id){
   meta.currentAccountId=id;
+  currentMonth=currentMonthForToday();
   saveMeta();
   document.getElementById("acct-overlay").classList.remove("show");
   resetAnalysis();
@@ -2193,10 +2290,14 @@ function initStatic(){
 }
 async function init(){
   initStatic();
-  await load();
+  await Promise.all([
+    load(),
+    fetch("/api/household/list").then(r=>r.ok?r.json():[]).catch(()=>[]).then(d=>{households=d;})
+  ]);
   if(meta){
     meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};
     if(meta.currency){const fallback=meta.currency;meta.accounts.forEach(a=>{if(!a.currency)a.currency=fallback;});delete meta.currency;saveMeta();}
+    currentMonth=currentMonthForToday();
   }
   if(!meta){onboarding();}
 
