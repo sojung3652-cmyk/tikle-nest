@@ -43,16 +43,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/signin", request.url));
   }
 
-  // Main app requires a household
-  if (pathname === "/") {
-    const { data } = await supabase
+  // Check household membership only for the two routes that need it.
+  // Use limit(1) instead of maybeSingle() so it never errors when a user
+  // belongs to multiple households.
+  if (pathname === "/" || pathname === "/household") {
+    const { data: memberships } = await supabase
       .from("household_members")
       .select("household_id")
       .eq("user_id", user.id)
-      .maybeSingle();
+      .limit(1);
 
-    if (!data) {
+    const hasMembership = memberships && memberships.length > 0;
+
+    // Main app: require a household
+    if (pathname === "/" && !hasMembership) {
       return NextResponse.redirect(new URL("/household", request.url));
+    }
+
+    // Create/join page: users who already have a household go straight to the app
+    if (pathname === "/household" && hasMembership) {
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 

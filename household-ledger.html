@@ -1031,6 +1031,7 @@ function resizeImage(file,maxDim,quality){
 
 /* ---------- render ---------- */
 function render(){
+  if(!meta)return;
   if(acct()&&acct().lock&&!unlocked.has(acct().id)){
     document.getElementById("acct-sub").textContent=tr("locked_acct",acct().name);
     return;
