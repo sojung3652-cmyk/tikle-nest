@@ -44,9 +44,14 @@ export async function createHousehold(formData: FormData) {
 
   if (hhErr) return { error: hhErr.message };
 
+  const ownerDisplayName =
+    (user.user_metadata?.display_name as string | undefined) ||
+    user.email?.split("@")[0] ||
+    "Owner";
+
   await supabase
     .from("household_members")
-    .insert({ household_id: hh.id, user_id: user.id, role: "owner" });
+    .insert({ household_id: hh.id, user_id: user.id, role: "owner", display_name: ownerDisplayName });
 
   // Seed the JSON blob store so the HTML app starts with household name + one account
   const accountId = makeUUID();

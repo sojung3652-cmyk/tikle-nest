@@ -223,6 +223,19 @@
   .acct-badge.active{background:var(--nec-soft);color:var(--nec-text);}
   .acct-edit-btn{flex-shrink:0;border:1px solid var(--mist);background:transparent;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-soft);transition:.15s;}
   .acct-edit-btn:hover{border-color:var(--accent);color:var(--accent);}
+  /* multi-household account selection */
+  .aso-hh-group{margin-bottom:14px;}
+  .aso-hh-group-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-left:2px;}
+  .aso-hh-group-name{font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--ink);}
+  .aso-hh-role-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.04em;}
+  .aso-hh-role-badge.owner{background:var(--nec-soft);color:var(--nec-text);}
+  .aso-hh-role-badge.member{background:var(--mist);color:var(--ink-soft);}
+  /* member list in settings */
+  .member-list{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+  .member-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border:1px solid var(--mist);border-radius:10px;}
+  .member-info{flex:1;min-width:0;}
+  .member-name{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .member-meta{display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap;}
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px;}
   .chip{border:1px solid var(--mist);background:var(--paper);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink);transition:.15s;}
   .chip:hover{border-color:var(--nec);background:var(--nec-soft);color:var(--nec-text);}
@@ -914,6 +927,7 @@ const CAR_MODELS=["Toyota","Toyota Camry","Toyota Corolla","Toyota RAV4","Toyota
 let meta=null;
 let entries=[];
 let households=[];
+let allHouseholdsData=[];
 let currentMonth=monthKey(new Date());
 let pendingMode="nec";       /* 'nec' | 'opt' | 'partial' */
 let pendingPhoto=null;
@@ -1345,8 +1359,12 @@ async function analyzeFuel(recs){
 }
 
 async function openFullSettings(openSection){
-  let inviteCode="";
-  try{const r=await fetch("/api/household");if(r.ok){const d=await r.json();inviteCode=d.invite_code||"";}}catch{}
+  let inviteCode="",membersList=[];
+  try{
+    const[hhRes,membRes]=await Promise.all([fetch("/api/household"),fetch("/api/household/members")]);
+    if(hhRes.ok){const d=await hhRes.json();inviteCode=d.invite_code||"";}
+    if(membRes.ok)membersList=await membRes.json();
+  }catch{}
   const user=window.__TN_USER__||{};
   const origHHName=meta.name||"";
   const origDispName=user.name||"";
@@ -1378,6 +1396,23 @@ async function openFullSettings(openSection){
         `<div class="field"><label for="s-name">${tr("household_name_label")}</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/></div>`+
         `<div class="field" style="margin-bottom:10px"><label>${tr("accounts_label")}</label><div class="acct-list">${accRows}</div></div>`+
         `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
+        (()=>{
+          // ── Members section ──
+          if(!membersList.length)return "";
+          const myId=(window.__TN_USER__||{}).id;
+          const iAmOwner=membersList.some(m=>m.user_id===myId&&m.role==="owner");
+          const rows=membersList.map(m=>{
+            const isMe=m.user_id===myId;
+            const dName=m.display_name||(isMe?(lang==="ko"?"나":"Me"):(lang==="ko"?"멤버":"Member"));
+            const jDate=m.joined_at?new Date(m.joined_at).toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"short",day:"numeric"}):"";
+            const roleTxt=m.role==="owner"?(lang==="ko"?"소유자":"Owner"):(lang==="ko"?"멤버":"Member");
+            const roleBadge=m.role==="owner"?`<span class="acct-badge active">${roleTxt}</span>`:`<span class="acct-badge">${roleTxt}</span>`;
+            const rmBtn=iAmOwner&&!isMe?`<button class="acct-edit-btn rm-member-btn" data-uid="${m.user_id}" style="flex-shrink:0;color:var(--over-text);border-color:var(--over-soft);background:var(--over-soft)">${lang==="ko"?"제거":"Remove"}</button>`:"";
+            return `<div class="member-row"><div class="member-info"><div class="member-name">${esc(dName)}</div><div class="member-meta">${roleBadge}${jDate?`<span style="font-size:11px;color:var(--ink-faint)">${lang==="ko"?"참여 ":"joined "}${jDate}</span>`:""}</div></div>${rmBtn}</div>`;
+          }).join("");
+          const membLbl=lang==="ko"?"가계 멤버":"Members";
+          return `<div class="field" style="margin-bottom:10px"><label>${membLbl}</label><div class="member-list">${rows}</div></div>`;
+        })()+
         (inviteCode?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`:"")+
         `<button class="btn-secondary" id="s-join-hh" style="width:100%;justify-content:center;margin-top:10px">${lang==="ko"?"다른 가계 참여":"Join another household"}</button>`+
       `</div>`+
@@ -1475,6 +1510,22 @@ async function openFullSettings(openSection){
     meta.accounts.push({id,name:v,currency:acct()?.currency||"USD"});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);
   };
   if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};}
+  // Remove member buttons (owner only)
+  document.querySelectorAll(".rm-member-btn[data-uid]").forEach(btn=>{
+    btn.onclick=async()=>{
+      const uid=btn.dataset.uid;
+      const memberName=(membersList.find(m=>m.user_id===uid)||{}).display_name||(lang==="ko"?"이 멤버":"this member");
+      const confirmMsg=lang==="ko"?`"${esc(memberName)}"을(를) 가계에서 제거하시겠어요?`:`Remove "${esc(memberName)}" from your household?`;
+      openModal(`<p style="margin:0 0 16px;font-weight:600">${confirmMsg}</p>`+
+        `<div class="modal-actions"><button class="ghost" id="rm-cancel">${tr("cancel")}</button><button class="primary" style="background:var(--over);border-color:var(--over)" id="rm-confirm">${lang==="ko"?"제거":"Remove"}</button></div>`);
+      document.getElementById("rm-cancel").onclick=()=>openFullSettings(1);
+      document.getElementById("rm-confirm").onclick=async()=>{
+        const r=await fetch("/api/household/members",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:uid})});
+        if(r.ok){toast(lang==="ko"?"멤버가 제거되었습니다":"Member removed");openFullSettings(1);}
+        else{const d=await r.json().catch(()=>({}));toast(d.error||(lang==="ko"?"오류가 발생했습니다":"Something went wrong"));openFullSettings(1);}
+      };
+    };
+  });
   document.getElementById("s-join-hh").onclick=()=>{
     const joinHdr=lang==="ko"?"가계 참여":"Join a household";
     const joinDesc=lang==="ko"?"파트너나 가족의 초대 코드를 입력하세요.":"Enter the invite code from your partner or family member.";
@@ -1501,7 +1552,10 @@ async function openFullSettings(openSection){
           meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};
           currentMonth=currentMonthForToday();
         }
-        households=await fetch("/api/household/list").then(rv=>rv.ok?rv.json():[]).catch(()=>[]);
+        [households,allHouseholdsData]=await Promise.all([
+          fetch("/api/household/list").then(rv=>rv.ok?rv.json():[]).catch(()=>[]),
+          fetch("/api/household/all-accounts").then(rv=>rv.ok?rv.json():[]).catch(()=>[])
+        ]);
         closeModal();
         toast((lang==="ko"?"가계에 참여했습니다: ":"Joined: ")+d.name);
         if(meta){resetAnalysis();showAccountSelect();}else{onboarding();}
@@ -2246,46 +2300,67 @@ function showAccountSelect(){
   const w=document.getElementById("aso-welcome");
   if(w){const n=(window.__TN_USER__||{}).name;w.textContent=n?tr("welcome",n):(lang==="ko"?"환영합니다!":"Welcome!");}
   const subEl=document.querySelector(".aso-sub");if(subEl)subEl.textContent=tr("choose_account");
-  // Household switcher (show only if user belongs to multiple households)
+  // Old pill switcher is hidden; switching now happens inline via grouped account click
   const hhWrap=document.getElementById("aso-hh-switch");
-  if(hhWrap){
-    if(households.length>1){
-      const hhLabel=lang==="ko"?"가계":"Household";
-      hhWrap.innerHTML=`<div class="aso-hh-wrap"><div class="aso-hh-label">${hhLabel}</div><div class="aso-hh-pills">`+
-        households.map(hh=>`<button class="aso-hh-btn${hh.isActive?" active":""}" data-hh="${hh.id}">${esc(hh.name)}</button>`).join("")+
-        `</div></div>`;
-      hhWrap.style.display="";
-      hhWrap.querySelectorAll("[data-hh]").forEach(b=>{
-        b.onclick=async()=>{
-          if(b.classList.contains("active"))return;
-          b.disabled=true;b.textContent=(lang==="ko"?"전환 중…":"Switching…");
-          await fetch("/api/household/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({householdId:b.dataset.hh})});
-          // Update local list and reload data for the switched household
-          households=households.map(hh=>({...hh,isActive:hh.id===b.dataset.hh}));
+  if(hhWrap)hhWrap.style.display="none";
+
+  const c=document.getElementById("aso-cards");
+
+  if(allHouseholdsData.length>1){
+    // ── Multi-household: group accounts under household headers ──
+    c.innerHTML=allHouseholdsData.map(hh=>{
+      const ownerLbl=lang==="ko"?"소유자":"Owner";
+      const joinedLbl=lang==="ko"?("참여"+(hh.ownerName?" · "+esc(hh.ownerName):"")):"Joined"+(hh.ownerName?" · "+esc(hh.ownerName):"");
+      const badgeCls=hh.role==="owner"?"owner":"member";
+      const badgeTxt=hh.role==="owner"?ownerLbl:joinedLbl;
+      const cards=hh.accounts.map(a=>{
+        const isCur=hh.isActive&&a.id===meta?.currentAccountId;
+        const locked=a.lock&&!unlocked.has(a.id);
+        const sub=locked?tr("private_locked"):tr("shared");
+        return `<button class="aso-card${isCur?" aso-cur":""}" data-id="${esc(a.id)}" data-hh="${esc(hh.id)}" type="button">`+
+          `<div><div class="aso-card-name">${esc(a.name)} · ${a.currency||"USD"}</div><div class="aso-card-sub">${sub}</div></div>`+
+          (locked?'<span class="aso-lock">🔒</span>':'')+
+        `</button>`;
+      }).join("");
+      return `<div class="aso-hh-group">`+
+        `<div class="aso-hh-group-hdr"><span class="aso-hh-group-name">${esc(hh.name)}</span><span class="aso-hh-role-badge ${badgeCls}">${badgeTxt}</span></div>`+
+        cards+
+      `</div>`;
+    }).join("");
+
+    c.querySelectorAll("[data-id][data-hh]").forEach(btn=>{
+      btn.onclick=async()=>{
+        const acctId=btn.dataset.id,hhId=btn.dataset.hh;
+        const hhData=allHouseholdsData.find(h=>h.id===hhId);
+        if(!hhData)return;
+        if(!hhData.isActive){
+          // Switch household context first, then reload meta
+          btn.disabled=true;
+          await fetch("/api/household/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({householdId:hhId})});
+          allHouseholdsData=allHouseholdsData.map(h=>({...h,isActive:h.id===hhId}));
+          households=households.map(h=>({...h,isActive:h.id===hhId}));
           meta=null;entries=[];
           await load();
-          if(meta){
-            meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};
-            currentMonth=currentMonthForToday();
-          }
-          showAccountSelect();
-        };
-      });
-    }else{
-      hhWrap.style.display="none";
-    }
+          if(meta){meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};currentMonth=currentMonthForToday();}
+          btn.disabled=false;
+        }
+        asoSelect(acctId);
+      };
+    });
+  } else {
+    // ── Single household: plain account list ──
+    const accounts=meta?meta.accounts:[];
+    c.innerHTML=accounts.map(a=>{
+      const locked=a.lock&&!unlocked.has(a.id);
+      const cur=a.id===meta?.currentAccountId;
+      const sub=locked?tr("private_locked"):a.lock&&unlocked.has(a.id)?tr("private_unlocked"):tr("shared");
+      return `<button class="aso-card${cur?" aso-cur":""}" data-id="${a.id}" type="button">`+
+        `<div><div class="aso-card-name">${esc(a.name)} · ${a.currency||"USD"}</div><div class="aso-card-sub">${sub}</div></div>`+
+        (locked?'<span class="aso-lock">🔒</span>':'')+
+      `</button>`;
+    }).join("");
+    c.querySelectorAll(".aso-card").forEach(btn=>btn.onclick=()=>asoSelect(btn.dataset.id));
   }
-  const c=document.getElementById("aso-cards");
-  c.innerHTML=meta.accounts.map(a=>{
-    const locked=a.lock&&!unlocked.has(a.id);
-    const cur=a.id===meta.currentAccountId;
-    const sub=locked?tr("private_locked"):a.lock&&unlocked.has(a.id)?tr("private_unlocked"):tr("shared");
-    return `<button class="aso-card${cur?" aso-cur":""}" data-id="${a.id}" type="button">`+
-      `<div><div class="aso-card-name">${esc(a.name)} · ${a.currency||"USD"}</div><div class="aso-card-sub">${sub}</div></div>`+
-      (locked?'<span class="aso-lock">🔒</span>':'')+
-    `</button>`;
-  }).join("");
-  c.querySelectorAll(".aso-card").forEach(btn=>btn.onclick=()=>asoSelect(btn.dataset.id));
   document.getElementById("acct-overlay").classList.add("show");
 }
 function asoSelect(id){
@@ -2324,7 +2399,8 @@ async function init(){
   initStatic();
   await Promise.all([
     load(),
-    fetch("/api/household/list").then(r=>r.ok?r.json():[]).catch(()=>[]).then(d=>{households=d;})
+    fetch("/api/household/list").then(r=>r.ok?r.json():[]).catch(()=>[]).then(d=>{households=d;}),
+    fetch("/api/household/all-accounts").then(r=>r.ok?r.json():[]).catch(()=>[]).then(d=>{allHouseholdsData=d;})
   ]);
   if(meta){
     meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};

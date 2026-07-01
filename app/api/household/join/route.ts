@@ -25,9 +25,13 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (!existing) {
+    const memberDisplayName =
+      (user.user_metadata?.display_name as string | undefined) ||
+      user.email?.split("@")[0] ||
+      "Member";
     const { error } = await supabase
       .from("household_members")
-      .insert({ household_id: hh.id, user_id: user.id, role: "member" });
+      .insert({ household_id: hh.id, user_id: user.id, role: "member", display_name: memberDisplayName });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
