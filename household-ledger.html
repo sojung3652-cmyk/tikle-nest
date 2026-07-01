@@ -41,6 +41,9 @@
   .pill:hover{border-color:var(--accent);color:var(--ink);}
   .pill[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff;}
   .pill.add{padding:7px 12px;color:var(--nec-text);}
+  .pill-sep{display:flex;align-items:center;color:var(--mist);font-size:16px;padding:0 2px;pointer-events:none;user-select:none;}
+  .pill.pill-joined{opacity:.75;}
+  .pill.pill-joined:hover{opacity:1;border-color:var(--accent);color:var(--ink);}
   .month-nav{display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--mist);border-radius:999px;padding:5px 7px;box-shadow:var(--shadow);}
   .month-nav button{border:none;background:transparent;cursor:pointer;width:30px;height:30px;border-radius:999px;color:var(--ink);font-size:17px;display:grid;place-items:center;transition:background .15s;}
   .month-nav button:hover{background:var(--mist-2);}
@@ -1060,8 +1063,13 @@ function render(){
   document.getElementById("change-cur").textContent=c.sym+" "+(acct()?.currency||"USD")+" ▾";
 
   const pills=document.getElementById("acct-pills");
-  pills.innerHTML=meta.accounts.map(a=>`<button class="pill" data-id="${a.id}" aria-pressed="${a.id===meta.currentAccountId}">${a.lock?"🔒 ":""}${esc(a.name)} · ${a.currency||"USD"}</button>`).join("")+`<button class="pill add" id="add-acct">${tr("account_add")}</button>`;
-  pills.querySelectorAll(".pill[data-id]").forEach(b=>b.onclick=()=>switchAccount(b.dataset.id));
+  const joinedHHs=(allHouseholdsData||[]).filter(h=>!h.isActive&&h.accounts&&h.accounts.length>0);
+  const joinedPillsHtml=joinedHHs.length>0
+    ?`<span class="pill-sep" aria-hidden="true">|</span>`+joinedHHs.map(hh=>hh.accounts.map(a=>`<button class="pill pill-joined" data-hh="${esc(hh.id)}" data-id="${esc(a.id)}" title="${esc(hh.name)}">${a.lock?"🔒 ":""}${esc(a.name)} · ${a.currency||"USD"}</button>`).join("")).join("")
+    :"";
+  pills.innerHTML=meta.accounts.map(a=>`<button class="pill" data-id="${a.id}" aria-pressed="${a.id===meta.currentAccountId}">${a.lock?"🔒 ":""}${esc(a.name)} · ${a.currency||"USD"}</button>`).join("")+`<button class="pill add" id="add-acct">${tr("account_add")}</button>`+joinedPillsHtml;
+  pills.querySelectorAll(".pill[data-id]:not([data-hh])").forEach(b=>b.onclick=()=>switchAccount(b.dataset.id));
+  pills.querySelectorAll(".pill[data-hh]").forEach(b=>b.onclick=()=>switchToJoinedAccount(b.dataset.hh,b.dataset.id));
   document.getElementById("add-acct").onclick=openAddAccount;
 
   const ents=monthEntries();
@@ -1907,6 +1915,18 @@ function switchAccount(id){
   unlocked.clear();
   meta.currentAccountId=id;currentMonth=currentMonthForToday();saveMeta();resetAnalysis();render();
 }
+async function switchToJoinedAccount(hhId,acctId){
+  await fetch("/api/household/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({householdId:hhId})});
+  allHouseholdsData=allHouseholdsData.map(h=>({...h,isActive:h.id===hhId}));
+  households=households.map(h=>({...h,isActive:h.id===hhId}));
+  meta=null;entries=[];
+  await load();
+  if(!meta)return;
+  meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};
+  currentMonth=currentMonthForToday();
+  resetAnalysis();render();
+  switchAccount(acctId);
+}
 function promptUnlock(id){
   const a=meta.accounts.find(x=>x.id===id);
   const unlockDesc=lang==="ko"?"이 계정은 잠겨 있습니다. 비밀번호를 입력해 여세요.":"This account is locked. Enter its password to open it.";
@@ -2308,8 +2328,9 @@ function showAccountSelect(){
   const c=document.getElementById("aso-cards");
 
   if(allHouseholdsData.length>=1){
-    // ── Grouped view: each household listed with its accounts ──
-    c.innerHTML=allHouseholdsData.map(hh=>{
+    // ── Grouped view: owner households first, then joined ──
+    const sortedHHs=[...allHouseholdsData].sort((a,b)=>a.role!==b.role?(a.role==="owner"?-1:1):((b.isActive?1:0)-(a.isActive?1:0)));
+    c.innerHTML=sortedHHs.map(hh=>{
       const ownerLbl=lang==="ko"?"소유자":"Owner";
       const joinedLbl=lang==="ko"?("참여"+(hh.ownerName?" · "+esc(hh.ownerName):"")):"Joined"+(hh.ownerName?" · "+esc(hh.ownerName):"");
       const badgeCls=hh.role==="owner"?"owner":"member";

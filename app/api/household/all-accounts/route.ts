@@ -85,7 +85,10 @@ export async function GET() {
     };
   });
 
-  // Active household first
-  results.sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0));
+  // Owner households first, then member. Within same role, active first.
+  results.sort((a, b) => {
+    if (a.role !== b.role) return a.role === "owner" ? -1 : 1;
+    return (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0);
+  });
   return NextResponse.json(results);
 }
