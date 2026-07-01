@@ -1369,6 +1369,8 @@ async function openFullSettings(openSection){
   const origHHName=meta.name||"";
   const origDispName=user.name||"";
 
+  const myId=(window.__TN_USER__||{}).id;
+  const iAmOwner=membersList.some(m=>m.user_id===myId&&m.role==="owner")||((allHouseholdsData.find(h=>h.isActive)||{}).role==="owner");
   const viewingLbl=lang==="ko"?"현재 보는 중":"Viewing";
   const accRows=meta.accounts.map(a=>{
     const isActive=a.id===meta.currentAccountId;
@@ -1382,7 +1384,7 @@ async function openFullSettings(openSection){
           ${isActive?`<span class="acct-badge active">● ${viewingLbl}</span>`:""}
         </div>
       </div>
-      <button class="acct-edit-btn" data-id="${a.id}">${tr("edit_btn")}</button>
+      ${iAmOwner?`<button class="acct-edit-btn" data-id="${a.id}">${tr("edit_btn")}</button>`:""}
     </div>`;
   }).join("");
 
@@ -1393,17 +1395,15 @@ async function openFullSettings(openSection){
     `<div class="set-acc" id="sacc-1">`+
       `<div class="set-acc-hd" id="sacc-hd-1"><span class="chev">›</span>${tr("manage_accounts")}</div>`+
       `<div class="set-acc-body" id="sacc-bd-1">`+
-        `<div class="field"><label for="s-name">${tr("household_name_label")}</label><input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/></div>`+
+        `<div class="field"><label>${tr("household_name_label")}</label>${iAmOwner?`<input type="text" id="s-name" value="${esc(meta.name||"")}" placeholder="${tr("household_name_label")}"/>`:`<div style="font-size:14px;color:var(--ink-soft);padding:9px 0">${esc(meta.name||"")}</div>`}</div>`+
         `<div class="field" style="margin-bottom:10px"><label>${tr("accounts_label")}</label><div class="acct-list">${accRows}</div></div>`+
-        `<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`+
+        `${iAmOwner?`<div class="field"><div style="display:flex;gap:8px"><input type="text" id="s-newacct" placeholder="${tr("new_account_ph")}"/><button class="mini-btn" id="s-addacct" style="padding:0 16px">${tr("add")}</button></div></div>`:""}`+
         (()=>{
           // ── Members section ──
           if(!membersList.length)return "";
-          const myId=(window.__TN_USER__||{}).id;
-          const iAmOwner=membersList.some(m=>m.user_id===myId&&m.role==="owner");
           const rows=membersList.map(m=>{
             const isMe=m.user_id===myId;
-            const dName=m.display_name||(isMe?(lang==="ko"?"나":"Me"):(lang==="ko"?"멤버":"Member"));
+            const dName=isMe?((window.__TN_USER__||{}).name||(lang==="ko"?"나":"Me")):(m.display_name||(lang==="ko"?"멤버":"Member"));
             const jDate=m.joined_at?new Date(m.joined_at).toLocaleDateString(lang==="ko"?"ko-KR":"en-US",{month:"short",day:"numeric"}):"";
             const roleTxt=m.role==="owner"?(lang==="ko"?"소유자":"Owner"):(lang==="ko"?"멤버":"Member");
             const roleBadge=m.role==="owner"?`<span class="acct-badge active">${roleTxt}</span>`:`<span class="acct-badge">${roleTxt}</span>`;
@@ -1413,7 +1413,7 @@ async function openFullSettings(openSection){
           const membLbl=lang==="ko"?"가계 멤버":"Members";
           return `<div class="field" style="margin-bottom:10px"><label>${membLbl}</label><div class="member-list">${rows}</div></div>`;
         })()+
-        (inviteCode?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`:"")+
+        (inviteCode&&iAmOwner?`<div class="set-invite"><div class="set-invite-label">${tr("invite_partner")}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div class="set-invite-code">${esc(inviteCode)}</div><button class="mini-btn" id="s-copy-invite">${tr("copy")}</button></div><div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${tr("invite_hint")}</div></div>`:"")+
         `<button class="btn-secondary" id="s-join-hh" style="width:100%;justify-content:center;margin-top:10px">${lang==="ko"?"다른 가계 참여":"Join another household"}</button>`+
       `</div>`+
     `</div>`+
@@ -1504,12 +1504,13 @@ async function openFullSettings(openSection){
   document.getElementById("s-close").onclick=confirmClose;
 
   document.querySelectorAll(".acct-edit-btn[data-id]").forEach(b=>b.onclick=()=>openAccountEdit(b.dataset.id));
-  document.getElementById("s-addacct").onclick=async()=>{
+  const _addAcctEl=document.getElementById("s-addacct");
+  if(_addAcctEl)_addAcctEl.onclick=async()=>{
     const v=document.getElementById("s-newacct").value.trim()||(lang==="ko"?"새 계정":"New account");
     const id=uid();
     meta.accounts.push({id,name:v,currency:acct()?.currency||"USD"});meta.currentAccountId=id;await saveMeta();render();openFullSettings(1);
   };
-  if(inviteCode){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};}
+  if(inviteCode&&iAmOwner){document.getElementById("s-copy-invite").onclick=()=>{navigator.clipboard.writeText(inviteCode).then(()=>toast(tr("invite_copied"))).catch(()=>toast(inviteCode));};}
   // Remove member buttons (owner only)
   document.querySelectorAll(".rm-member-btn[data-uid]").forEach(btn=>{
     btn.onclick=async()=>{
@@ -2306,8 +2307,8 @@ function showAccountSelect(){
 
   const c=document.getElementById("aso-cards");
 
-  if(allHouseholdsData.length>1){
-    // ── Multi-household: group accounts under household headers ──
+  if(allHouseholdsData.length>=1){
+    // ── Grouped view: each household listed with its accounts ──
     c.innerHTML=allHouseholdsData.map(hh=>{
       const ownerLbl=lang==="ko"?"소유자":"Owner";
       const joinedLbl=lang==="ko"?("참여"+(hh.ownerName?" · "+esc(hh.ownerName):"")):"Joined"+(hh.ownerName?" · "+esc(hh.ownerName):"");
@@ -2447,12 +2448,10 @@ async function init(){
   document.getElementById("file").onchange=e=>onFile(e.target.files[0]);
   document.getElementById("amount").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("note").focus();});
 
-  document.getElementById("brand-logo").onclick=()=>{
+  document.getElementById("brand-logo").onclick=async()=>{
     if(!meta)return;
-    openModal(`<h3>${tr("switch_account")}</h3>`+
-      `<p style="color:var(--ink-soft);font-size:14px;margin:0 0 4px">${tr("switch_confirm")}</p>`+
-      `<div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("stay")}</button><button class="primary" id="m-go-accts">${tr("go_to_accts")}</button></div>`);
-    document.getElementById("m-go-accts").onclick=()=>{closeModal();showAccountSelect();};
+    allHouseholdsData=await fetch("/api/household/all-accounts").then(r=>r.ok?r.json():[]).catch(()=>[]);
+    showAccountSelect();
   };
 
   applyI18n();

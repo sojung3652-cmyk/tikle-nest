@@ -4,8 +4,10 @@ import { cookies } from "next/headers";
 
 // GET /api/household/all-accounts
 // Returns every household the user belongs to, each with its accounts
-// parsed from app_data. Used by the account-selection overlay to show
-// a grouped view across multiple households.
+// parsed from app_data. Implements the join:
+//   SELECT h.* FROM households h
+//   JOIN household_members hm ON hm.household_id = h.id
+//   WHERE hm.user_id = [current user]
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -14,26 +16,24 @@ export async function GET() {
   const cookieStore = await cookies();
   const preferred = cookieStore.get("tn-household")?.value;
 
-  // Only select columns guaranteed to exist in the base schema (no display_name —
-  // that column requires the add-member-visibility migration to be applied first).
+  // Single JOIN query — equivalent to the SQL above. Using !inner ensures
+  // only households where the user actually has a membership row are returned.
   const { data: memberships, error: membershipsErr } = await supabase
     .from("household_members")
-    .select("household_id, role")
+    .select("household_id, role, households!inner(id, name)")
     .eq("user_id", user.id);
 
   if (membershipsErr || !memberships?.length) return NextResponse.json([]);
 
-  const ids = memberships.map((m: { household_id: string }) => m.household_id);
+  type MemberRow = {
+    household_id: string;
+    role: string;
+    households: { id: string; name: string };
+  };
+  const rows = memberships as unknown as MemberRow[];
+
+  const ids = rows.map((m) => m.household_id);
   const resolvedActive = (preferred && ids.includes(preferred)) ? preferred : ids[0];
-
-  // Household names
-  const { data: hhRows } = await supabase
-    .from("households")
-    .select("id, name")
-    .in("id", ids);
-
-  const hhName: Record<string, string> = {};
-  for (const h of hhRows ?? []) hhName[h.id] = h.name;
 
   // Meta blobs (accounts live inside these)
   const { data: metaRows } = await supabase
@@ -47,12 +47,10 @@ export async function GET() {
     try { metaMap[row.household_id] = JSON.parse(row.value); } catch {}
   }
 
-  // For households where this user is a member (not owner), look up the
-  // owner's display_name so the UI can show "Joined · <owner name>".
-  // This only works after the RLS migration has been applied — handle gracefully.
-  const memberHhIds = memberships
-    .filter((m: { role: string }) => m.role !== "owner")
-    .map((m: { household_id: string }) => m.household_id);
+  // For member households, optionally look up owner display names (post-migration only)
+  const memberHhIds = rows
+    .filter((m) => m.role !== "owner")
+    .map((m) => m.household_id);
 
   const ownerNames: Record<string, string | null> = {};
   if (memberHhIds.length > 0) {
@@ -69,7 +67,7 @@ export async function GET() {
     }
   }
 
-  const results = memberships.map((m: { household_id: string; role: string }) => {
+  const results = rows.map((m) => {
     const parsed = metaMap[m.household_id];
     const accounts = (parsed?.accounts ?? []).map((a) => ({
       id: a.id,
@@ -79,7 +77,7 @@ export async function GET() {
     }));
     return {
       id: m.household_id,
-      name: hhName[m.household_id] || "Household",
+      name: m.households.name || "Household",
       role: m.role,
       isActive: m.household_id === resolvedActive,
       ownerName: m.role !== "owner" ? (ownerNames[m.household_id] ?? null) : null,
@@ -88,7 +86,6 @@ export async function GET() {
   });
 
   // Active household first
-  results.sort((a: { isActive: boolean }, b: { isActive: boolean }) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0));
-
+  results.sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0));
   return NextResponse.json(results);
 }
