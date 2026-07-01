@@ -934,9 +934,19 @@ function bkey(){return meta.currentAccountId+":"+currentMonth;}
 function acctEntries(){return entries.filter(e=>e.accountId===meta.currentAccountId);}
 
 /* --- salary-period helpers --- */
-function salaryDay(){return meta?Math.max(1,Math.min(28,parseInt(acct()?.salaryDay)||1)):1;}
-function periodStart(mk){const sd=salaryDay();const[y,m]=mk.split("-").map(Number);return sd<=1?new Date(y,m-1,1):new Date(y,m-1,sd);}
-function periodEnd(mk){const sd=salaryDay();const[y,m]=mk.split("-").map(Number);return sd<=1?new Date(y,m,0):new Date(y,m,sd-1);}
+function salaryDay(){return meta?Math.max(1,Math.min(31,parseInt(acct()?.salaryDay)||1)):1;}
+function periodStart(mk){
+  const sd=salaryDay();const[y,m]=mk.split("-").map(Number);
+  if(sd<=1)return new Date(y,m-1,1);
+  const daysInM=new Date(y,m,0).getDate();
+  return new Date(y,m-1,Math.min(sd,daysInM));
+}
+function periodEnd(mk){
+  const sd=salaryDay();const[y,m]=mk.split("-").map(Number);
+  if(sd<=1)return new Date(y,m,0);
+  const daysInNextM=new Date(y,m+1,0).getDate();
+  return new Date(y,m,Math.min(sd-1,daysInNextM));
+}
 function inPeriod(dateStr,mk){
   const sd=salaryDay();
   if(sd<=1)return dateStr.startsWith(mk);
@@ -953,7 +963,10 @@ function periodLabel(mk){
 function currentMonthForToday(){
   const sd=salaryDay();const today=new Date();
   if(sd<=1)return monthKey(today);
-  return today.getDate()>=sd?monthKey(today):monthKey(new Date(today.getFullYear(),today.getMonth()-1,1));
+  // Use range check so short months (e.g. Feb with sd=31) are handled correctly
+  const thisM=monthKey(today);
+  if(today>=periodStart(thisM)&&today<=periodEnd(thisM))return thisM;
+  return monthKey(new Date(today.getFullYear(),today.getMonth()-1,1));
 }
 
 function monthEntries(){return acctEntries().filter(e=>inPeriod(e.date,currentMonth)&&e.type!=="income");}
@@ -1478,9 +1491,19 @@ async function openFullSettings(openSection){
         const r=await fetch("/api/household/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code})});
         const d=await r.json();
         if(!r.ok||d.error){toast(d.error||(lang==="ko"?"코드를 확인해 주세요":"Check the code and try again"));btn.disabled=false;btn.textContent=joinBtn;return;}
+        // Switch to the joined household server-side (sets cookie)
         await fetch("/api/household/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({householdId:d.id})});
+        // Reload meta/entries from the new household without a page refresh
+        meta=null;entries=[];
+        await load();
+        if(meta){
+          meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};
+          currentMonth=currentMonthForToday();
+        }
+        households=await fetch("/api/household/list").then(rv=>rv.ok?rv.json():[]).catch(()=>[]);
+        closeModal();
         toast((lang==="ko"?"가계에 참여했습니다: ":"Joined: ")+d.name);
-        setTimeout(()=>location.reload(),1000);
+        if(meta){resetAnalysis();showAccountSelect();}else{onboarding();}
       }catch(e){toast(lang==="ko"?"오류가 발생했습니다":"Something went wrong");btn.disabled=false;btn.textContent=joinBtn;}
     };
     document.getElementById("m-join-go").onclick=doJoin;
@@ -1519,8 +1542,8 @@ function openAccountEdit(id){
   const curOpts=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k].sym}  ${CUR_NAMES[k]} (${k})</option>`).join("");
   const curLbl=lang==="ko"?"통화":"Currency";
   const nameLbl=lang==="ko"?"계정 이름":"Account name";
-  const sdLbl=lang==="ko"?"급여일":"Salary day";
-  const sdDesc=lang==="ko"?"급여일을 설정하면 해당 날짜~다음 달 전날이 한 달 예산 기간이 됩니다. 1 = 일반 달력 기준":"Sets pay cycle start. Day 21 = 21st–20th of next month. 1 = regular calendar month.";
+  const sdLbl=lang==="ko"?"예산 주기 시작일":"Budget cycle start day";
+  const sdDesc=lang==="ko"?"급여가 들어오는 날짜를 입력하세요. 예: 21일이면 21일~다음 달 20일이 한 달 예산 기간입니다. 기본값 1 = 매달 1일 시작":"Day your pay cycle starts (1–31). Example: 21 means the period runs the 21st – 20th of next month. Default 1 = regular calendar months.";
   const lockLbl=(locked?tr("manage_lock"):tr("lock_account_hdr"))+" — "+esc(a.name);
   const lockIcon=locked?"🔒 ":"";
   const delLbl=lang==="ko"?"계정 삭제":"Delete account";
@@ -1531,7 +1554,7 @@ function openAccountEdit(id){
     `</div>`+
     `<div class="field"><label for="ae-name">${nameLbl}</label><input type="text" id="ae-name" value="${esc(a.name)}"/></div>`+
     `<div class="field"><label for="ae-cur">${curLbl}</label><select id="ae-cur">${curOpts}</select></div>`+
-    `<div class="field"><label for="ae-sd">${sdLbl}</label><input type="number" id="ae-sd" min="1" max="28" value="${a.salaryDay||1}" style="width:80px"/><div style="font-size:12px;color:var(--ink-soft);margin-top:4px">${sdDesc}</div></div>`+
+    `<div class="field"><label for="ae-sd">${sdLbl}</label><input type="number" id="ae-sd" min="1" max="31" value="${a.salaryDay||1}" style="width:80px"/><div style="font-size:12px;color:var(--ink-soft);margin-top:4px">${sdDesc}</div></div>`+
     `<button class="btn-secondary" id="ae-lock" style="width:100%;justify-content:center;margin-bottom:8px">${lockIcon}${lockLbl}</button>`+
     (meta.accounts.length>1?`<button class="btn-secondary" id="ae-del" style="width:100%;justify-content:center;border-color:var(--over-soft);background:var(--over-soft);color:var(--over-text);margin-bottom:0">${delLbl}</button>`:"")+
     `<button class="primary" id="ae-save" style="width:100%;margin-top:12px">${tr("save")}</button>`+
@@ -1544,7 +1567,7 @@ function openAccountEdit(id){
   document.getElementById("ae-lock").onclick=async()=>{
     const nm=document.getElementById("ae-name").value.trim();if(nm)a.name=nm;
     const c=document.getElementById("ae-cur").value;a.currency=c;
-    const sd=Math.max(1,Math.min(28,parseInt(document.getElementById("ae-sd").value)||1));
+    const sd=Math.max(1,Math.min(31,parseInt(document.getElementById("ae-sd").value)||1));
     if(sd===1)delete a.salaryDay;else a.salaryDay=sd;
     await saveMeta();render();openLockForm(id);
   };
@@ -1552,7 +1575,7 @@ function openAccountEdit(id){
   document.getElementById("ae-save").onclick=async()=>{
     const nm=document.getElementById("ae-name").value.trim();if(nm)a.name=nm;
     a.currency=document.getElementById("ae-cur").value;
-    const sd=Math.max(1,Math.min(28,parseInt(document.getElementById("ae-sd").value)||1));
+    const sd=Math.max(1,Math.min(31,parseInt(document.getElementById("ae-sd").value)||1));
     if(sd===1)delete a.salaryDay;else a.salaryDay=sd;
     if(a.id===meta.currentAccountId)currentMonth=currentMonthForToday();
     await saveMeta();render();openFullSettings(1);toast(tr("saved"));
@@ -2236,7 +2259,15 @@ function showAccountSelect(){
           if(b.classList.contains("active"))return;
           b.disabled=true;b.textContent=(lang==="ko"?"전환 중…":"Switching…");
           await fetch("/api/household/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({householdId:b.dataset.hh})});
-          location.reload();
+          // Update local list and reload data for the switched household
+          households=households.map(hh=>({...hh,isActive:hh.id===b.dataset.hh}));
+          meta=null;entries=[];
+          await load();
+          if(meta){
+            meta.goals=meta.goals||{};meta.recurring=meta.recurring||[];meta.recurSkips=meta.recurSkips||{};meta.car=meta.car||{};
+            currentMonth=currentMonthForToday();
+          }
+          showAccountSelect();
         };
       });
     }else{
