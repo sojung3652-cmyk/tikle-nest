@@ -268,6 +268,10 @@
   .mp-grid button{border:1px solid var(--mist);background:var(--paper);border-radius:8px;padding:11px 0;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink);transition:.15s;}
   .mp-grid button:hover{border-color:var(--nec);background:var(--nec-soft);}
   .mp-grid button.cur{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .mp-period-list{display:flex;flex-direction:column;gap:6px;max-height:370px;overflow-y:auto;}
+  .mp-period-btn{border:1px solid var(--mist);background:var(--paper);border-radius:8px;padding:12px 16px;font-size:14px;font-weight:500;cursor:pointer;color:var(--ink);text-align:left;transition:.15s;width:100%;}
+  .mp-period-btn:hover{border-color:var(--accent);background:var(--nec-soft);}
+  .mp-period-btn.cur{background:var(--accent);border-color:var(--accent);color:#fff;}
 
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:500;pointer-events:none;transition:.25s;z-index:80;}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -2147,8 +2151,30 @@ function openMonthPicker(initial,onPick){
   drawMonthPicker();
 }
 function drawMonthPicker(){
+  const sd=salaryDay();
+  if(sd>1){
+    /* Period-based picker: 13 periods centred on current */
+    const[cy,cm]=mpCurrent.split("-").map(Number);
+    const lo=lang==="ko"?"ko-KR":"en-US";
+    const fmtD=d=>d.toLocaleDateString(lo,{month:"short",day:"numeric"});
+    const items=[];
+    for(let i=-6;i<=6;i++){
+      const d=new Date(cy,cm-1+i,1);const mk=monthKey(d);
+      const[y,m]=mk.split("-").map(Number);
+      const dInM=new Date(y,m,0).getDate();const dInNext=new Date(y,m+1,0).getDate();
+      const start=new Date(y,m-1,Math.min(sd,dInM));const end=new Date(y,m,Math.min(sd-1,dInNext));
+      items.push({mk,lbl:fmtD(start)+" – "+fmtD(end),cur:mk===mpCurrent});
+    }
+    const hdr=lang==="ko"?"기간 선택":"Pick a period";
+    openModal(`<h3>${hdr}</h3><div class="mp-period-list">${items.map(p=>`<button class="mp-period-btn${p.cur?" cur":""}" data-m="${p.mk}">${p.lbl}</button>`).join("")}</div>`);
+    document.querySelectorAll(".mp-period-btn").forEach(b=>b.onclick=()=>{closeModal();mpPick(b.dataset.m);});
+    /* auto-scroll selected into view */
+    setTimeout(()=>{const cur=document.querySelector(".mp-period-btn.cur");if(cur)cur.scrollIntoView({block:"center"});},50);
+    return;
+  }
+  /* Standard calendar grid (budget_cycle_day = 1) */
   const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const grid=MN.map((m,i)=>{const mk=mpYear+"-"+String(i+1).padStart(2,"0");return `<button data-m="${mk}" class="${mk===mpCurrent?"cur":""}">${m}</button>`;}).join("");
+  const grid=MN.map((n,i)=>{const mk=mpYear+"-"+String(i+1).padStart(2,"0");return `<button data-m="${mk}" class="${mk===mpCurrent?"cur":""}">${n}</button>`;}).join("");
   openModal(`<h3>Pick a month</h3>
     <div class="mp-head"><button id="mp-prev" aria-label="Previous year">‹</button><span class="yr" id="mp-yr">${mpYear}</span><button id="mp-next" aria-label="Next year">›</button></div>
     <div class="mp-grid">${grid}</div>`);
