@@ -1618,7 +1618,8 @@ function openAccountEdit(id){
   const curOpts=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k].sym}  ${CUR_NAMES[k]} (${k})</option>`).join("");
   const curLbl=lang==="ko"?"통화":"Currency";
   const nameLbl=lang==="ko"?"계정 이름":"Account name";
-  const sdDesc=lang==="ko"?"예: 21이면 21일~다음 달 20일이 한 달 기간. 기본값 1 = 일반 달력 월":"Example: 21 → period runs the 21st – 20th of next month. Default 1 = regular calendar months.";
+  const sdLbl=lang==="ko"?"예산 시작일":"Budget cycle start day";
+  const sdDesc=lang==="ko"?"매월 이 날짜에 예산 기간이 시작됩니다. 예: 월급날이 21일이면 21로 설정하세요.":"Your budget period starts on this day each month. Example: set to 21 if your salary comes on the 21st.";
   const lockLbl=(locked?tr("manage_lock"):tr("lock_account_hdr"))+" — "+esc(a.name);
   const lockIcon=locked?"🔒 ":"";
   const delLbl=lang==="ko"?"계정 삭제":"Delete account";
@@ -1629,7 +1630,12 @@ function openAccountEdit(id){
     `</div>`+
     `<div class="field"><label for="ae-name">${nameLbl}</label><input type="text" id="ae-name" value="${esc(a.name)}"/></div>`+
     `<div class="field"><label for="ae-cur">${curLbl}</label><select id="ae-cur">${curOpts}</select></div>`+
-    `<div class="field"><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-weight:600">${lang==="ko"?"예산 주기 시작일":"Budget cycle start day"}</label><div style="display:flex;align-items:center;gap:6px;margin-top:4px">${lang==="ko"?"매월":"Day"} <input type="number" id="ae-sd" min="1" max="31" value="${a.salaryDay||1}" style="width:58px"/> ${lang==="ko"?"일부터 시작":"of each month"}</div><div id="ae-sd-preview" style="font-size:12.5px;color:var(--accent);margin-top:6px;font-weight:500"></div><div style="font-size:12px;color:var(--ink-soft);margin-top:3px">${sdDesc}</div></div>`+
+    `<div class="field" style="background:var(--mist);border-radius:12px;padding:14px 16px;">`+
+      `<label for="ae-sd" style="font-weight:700;font-size:14px;display:block;margin-bottom:10px">${sdLbl}</label>`+
+      `<input type="number" id="ae-sd" min="1" max="31" value="${a.salaryDay||1}" style="width:72px;font-size:20px;font-weight:700;text-align:center;border:2px solid var(--accent);border-radius:8px;padding:6px 0;"/>`+
+      `<div id="ae-sd-preview" style="font-size:13px;color:var(--accent);margin-top:10px;font-weight:600;min-height:18px;"></div>`+
+      `<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.5">${sdDesc}</div>`+
+    `</div>`+
     `<button class="btn-secondary" id="ae-lock" style="width:100%;justify-content:center;margin-bottom:8px">${lockIcon}${lockLbl}</button>`+
     (meta.accounts.length>1?`<button class="btn-secondary" id="ae-del" style="width:100%;justify-content:center;border-color:var(--over-soft);background:var(--over-soft);color:var(--over-text);margin-bottom:0">${delLbl}</button>`:"")+
     `<button class="primary" id="ae-save" style="width:100%;margin-top:12px">${tr("save")}</button>`+
