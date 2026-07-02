@@ -552,9 +552,6 @@
     </div>
   </details>
 
-  <div style="text-align:center;margin-top:26px">
-    <button class="chip-btn" id="open-settings">Settings</button>
-  </div>
 </div>
 
 <div id="toast"></div>
@@ -824,7 +821,7 @@ function applyI18n(){
   const ph=(id,key)=>{const el=document.getElementById(id);if(el)el.placeholder=tr(key);};
   const tog=(id,key)=>{const el=document.getElementById(id);if(!el)return;const d=el.querySelector(".d");el.textContent=tr(key);if(d)el.prepend(d);};
   set("open-fuel","fuel");set("edit-budget","edit_budget");set("edit-goal","goal");
-  set("open-income","income");set("open-settings","settings");set("add","add_entry");
+  set("open-income","income");set("add","add_entry");
   set("add-recur","add_recurring");set("ec-all","all");set("ec-sort","sort");
   set("ec-show","show");
   set("unit-g","gallons");set("unit-l","liters");set("btn-rec","ai_recommend");
@@ -2545,7 +2542,6 @@ async function init(){
   document.getElementById("add-recur").onclick=()=>openRecurModal();
   document.getElementById("open-income").onclick=openIncomeList;
   document.getElementById("open-fuel").onclick=openFuelView;
-  document.getElementById("open-settings").onclick=openFullSettings;
   document.getElementById("bb-head").onclick=e=>{if(!e.target.closest("#bb-report-btn"))bbToggle();};
   document.getElementById("bb-report-btn").onclick=e=>{e.stopPropagation();bbReport();};
   document.getElementById("bb-send").onclick=()=>bbSendChat(document.getElementById("bb-input").value);
