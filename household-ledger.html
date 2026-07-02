@@ -805,7 +805,7 @@ const TRANSLATIONS={
     bb_suggest_compare:"지난달과 비교해 주세요",
   }
 };
-const CAT_KO={"Rent / Housing":"주거/월세","Utilities":"공과금","Groceries":"식료품","Public transit":"대중교통","Fuel / Gas":"연료/주유","Car payment / upkeep":"자동차","Taxi / Rideshare":"택시/라이드","Phone / Internet":"통신비","Health":"의료/건강","Insurance":"보험","Savings / 적금":"적금/저축","Investment / 주식":"투자/주식","Dining out":"외식","Shopping":"쇼핑","Entertainment":"여가/오락","Subscriptions":"구독","Gifts":"선물","Other":"기타"};
+const CAT_KO={"Rent / Housing":"주거/월세","Utilities":"공과금","Groceries":"식료품","Public transit":"대중교통","Fuel / Gas":"연료/주유","Car payment / upkeep":"자동차","Taxi / Rideshare":"택시/라이드","Phone / Internet":"통신비","Health":"의료/건강","Insurance":"보험","Savings":"적금/저축","Investment":"투자/주식","Dining out":"외식","Shopping":"쇼핑","Entertainment":"여가/오락","Subscriptions":"구독","Gifts":"선물","Other":"기타"};
 let lang=localStorage.getItem("tn-lang")||"en";
 function tr(key,...args){const v=(TRANSLATIONS[lang]||TRANSLATIONS.en)[key]??TRANSLATIONS.en[key]??key;return typeof v==="function"?v(...args):v;}
 function catLabel(name){return lang==="ko"&&CAT_KO[name]?CAT_KO[name]:name;}
@@ -899,7 +899,7 @@ const CATEGORIES=[
   {name:"Rent / Housing",necessary:true},{name:"Utilities",necessary:true},{name:"Groceries",necessary:true},
   {name:"Public transit",necessary:true},{name:"Fuel / Gas",necessary:true},{name:"Car payment / upkeep",necessary:true},{name:"Taxi / Rideshare",necessary:false},
   {name:"Phone / Internet",necessary:true},{name:"Health",necessary:true},{name:"Insurance",necessary:true},
-  {name:"Savings / 적금",necessary:true},{name:"Investment / 주식",necessary:false},
+  {name:"Savings",necessary:true},{name:"Investment",necessary:false},
   {name:"Dining out",necessary:false},{name:"Shopping",necessary:false},{name:"Entertainment",necessary:false},
   {name:"Subscriptions",necessary:false},{name:"Gifts",necessary:false},{name:"Other",necessary:true}
 ];
@@ -1625,13 +1625,26 @@ function openAccountEdit(id){
     `</div>`+
     `<div class="field"><label for="ae-name">${nameLbl}</label><input type="text" id="ae-name" value="${esc(a.name)}"/></div>`+
     `<div class="field"><label for="ae-cur">${curLbl}</label><select id="ae-cur">${curOpts}</select></div>`+
-    `<div class="field"><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${lang==="ko"?"예산은 매월":"Budget starts on day"} <input type="number" id="ae-sd" min="1" max="31" value="${a.salaryDay||1}" style="width:58px;display:inline-block;margin:0"/> ${lang==="ko"?"일에 시작됩니다":"of each month"}</label><div style="font-size:12px;color:var(--ink-soft);margin-top:4px">${sdDesc}</div></div>`+
+    `<div class="field"><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-weight:600">${lang==="ko"?"예산 주기 시작일":"Budget cycle start day"}</label><div style="display:flex;align-items:center;gap:6px;margin-top:4px">${lang==="ko"?"매월":"Day"} <input type="number" id="ae-sd" min="1" max="31" value="${a.salaryDay||1}" style="width:58px"/> ${lang==="ko"?"일부터 시작":"of each month"}</div><div id="ae-sd-preview" style="font-size:12.5px;color:var(--accent);margin-top:6px;font-weight:500"></div><div style="font-size:12px;color:var(--ink-soft);margin-top:3px">${sdDesc}</div></div>`+
     `<button class="btn-secondary" id="ae-lock" style="width:100%;justify-content:center;margin-bottom:8px">${lockIcon}${lockLbl}</button>`+
     (meta.accounts.length>1?`<button class="btn-secondary" id="ae-del" style="width:100%;justify-content:center;border-color:var(--over-soft);background:var(--over-soft);color:var(--over-text);margin-bottom:0">${delLbl}</button>`:"")+
     `<button class="primary" id="ae-save" style="width:100%;margin-top:12px">${tr("save")}</button>`+
     `<div class="modal-actions" style="margin-top:8px"><button class="ghost" id="ae-cancel">${tr("cancel")}</button></div>`
   );
   document.getElementById("ae-cur").value=a.currency||"USD";
+  const updateSdPreview=()=>{
+    const sd=Math.max(1,Math.min(31,parseInt(document.getElementById("ae-sd").value)||1));
+    const prev=document.getElementById("ae-sd-preview");if(!prev)return;
+    if(sd<=1){prev.textContent=lang==="ko"?"→ 일반 달력 월 (매달 1일 시작)":"→ Regular calendar months (starts the 1st)";return;}
+    const now=new Date();const y=now.getFullYear();const m=now.getMonth();
+    const daysInM=new Date(y,m+1,0).getDate();const daysInNext=new Date(y,m+2,0).getDate();
+    const startDay=Math.min(sd,daysInM);const endDay=Math.min(sd-1,daysInNext);
+    const start=new Date(y,m,startDay);const end=new Date(y,m+1,endDay);
+    const lo=lang==="ko"?"ko-KR":"en-US";const fmtD=d=>d.toLocaleDateString(lo,{month:"short",day:"numeric"});
+    prev.textContent=(lang==="ko"?"→ 현재 기간: ":"→ Current period: ")+fmtD(start)+" – "+fmtD(end);
+  };
+  document.getElementById("ae-sd").addEventListener("input",updateSdPreview);
+  updateSdPreview();
   const goBack=()=>openFullSettings(1);
   document.getElementById("ae-back").onclick=goBack;
   document.getElementById("ae-cancel").onclick=goBack;
