@@ -2086,14 +2086,53 @@ async function deleteRecur(id){
 
 /* ---------- budget / goal ---------- */
 function openBudget(){
+  const a=acct();
+  const curSd=Math.max(1,Math.min(31,parseInt(a?.salaryDay)||1));
   const budHdr=lang==="ko"?`이번 달 예산 설정`:`Set this month's budget`;
-  const budDesc=lang==="ko"?`${esc(acct().name)} 계정의 ${monthLabel(currentMonth)} 예산은 얼마인가요?`:`How much are you working with for ${esc(acct().name)} in ${monthLabel(currentMonth)}?`;
+  const budDesc=lang==="ko"?`${esc(a.name)} 계정의 ${periodLabel(currentMonth)} 예산은 얼마인가요?`:`How much are you working with for ${esc(a.name)} in ${periodLabel(currentMonth)}?`;
+  const sdLbl=lang==="ko"?"예산 시작일":"Budget period starts on day";
+  const sdHint=lang==="ko"?"예: 월급날이 21일이면 21":"e.g. 21 if your salary comes on the 21st";
   openModal(`<h3>${budHdr}</h3><p>${budDesc}</p>
     <div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="m-budget" inputmode="decimal" placeholder="0" style="padding-left:32px;font-weight:600;" value="${fmtInput(meta.budgets[bkey()]||"")}"/></div>
+    <div class="field" style="margin-top:18px;padding:14px 16px;background:var(--mist);border-radius:10px;">
+      <label for="m-cycle-day" style="font-weight:600;font-size:13px;display:block;margin-bottom:8px">${sdLbl}</label>
+      <input type="number" id="m-cycle-day" min="1" max="31" value="${curSd}" style="width:64px;font-size:18px;font-weight:700;text-align:center;border:2px solid var(--accent);border-radius:8px;padding:5px 0;"/>
+      <div id="m-cycle-preview" style="font-size:12.5px;color:var(--accent);font-weight:600;margin-top:8px;min-height:16px;"></div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:3px;">${sdHint}</div>
+    </div>
     <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="m-budget-save">${tr("save")}</button></div>`);
   attachCommaFmt(document.getElementById("m-budget"));
+  /* live period preview */
+  const updateCyclePreview=()=>{
+    const sd=Math.max(1,Math.min(31,parseInt(document.getElementById("m-cycle-day").value)||1));
+    const prev=document.getElementById("m-cycle-preview");if(!prev)return;
+    if(sd<=1){prev.textContent=lang==="ko"?"→ 일반 달력 월":"→ Regular calendar months";return;}
+    const now=new Date();const y=now.getFullYear();const m=now.getMonth();
+    const dInM=new Date(y,m+1,0).getDate();const dInNext=new Date(y,m+2,0).getDate();
+    const start=new Date(y,m,Math.min(sd,dInM));const end=new Date(y,m+1,Math.min(sd-1,dInNext));
+    const lo=lang==="ko"?"ko-KR":"en-US";const fmtD=d=>d.toLocaleDateString(lo,{month:"short",day:"numeric"});
+    prev.textContent=(lang==="ko"?"→ 현재 기간: ":"→ Current period: ")+fmtD(start)+" – "+fmtD(end);
+  };
+  document.getElementById("m-cycle-day").addEventListener("input",updateCyclePreview);
+  updateCyclePreview();
   setTimeout(()=>document.getElementById("m-budget").focus(),50);
-  document.getElementById("m-budget-save").onclick=async()=>{const v=parseAmt(document.getElementById("m-budget").value);meta.budgets[bkey()]=(v&&v>0)?v:0;await saveMeta();closeModal();render();toast(lang==="ko"?"예산이 저장되었습니다":"Budget saved");};
+  document.getElementById("m-budget-save").onclick=async()=>{
+    const v=parseAmt(document.getElementById("m-budget").value);
+    const sd=Math.max(1,Math.min(31,parseInt(document.getElementById("m-cycle-day").value)||1));
+    /* save budget amount (use updated bkey in case cycle day changes currentMonth) */
+    meta.budgets[bkey()]=(v&&v>0)?v:0;
+    /* save cycle day to account */
+    if(sd===1)delete a.salaryDay;else a.salaryDay=sd;
+    /* recalculate current period and re-key the budget if needed */
+    const newMonth=currentMonthForToday();
+    if(newMonth!==currentMonth){
+      const oldBudget=meta.budgets[bkey()];
+      currentMonth=newMonth;
+      if(oldBudget&&!meta.budgets[bkey()])meta.budgets[bkey()]=oldBudget;
+    }
+    await saveMeta();closeModal();resetAnalysis();render();
+    toast(lang==="ko"?"저장되었습니다":"Saved");
+  };
   document.getElementById("m-budget").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("m-budget-save").click();});
 }
 function openGoal(){
