@@ -443,7 +443,7 @@
   <div class="grid">
     <section class="panel">
       <h2>Add an entry</h2>
-      <div class="field"><label for="amount">Amount</label><div class="amount-input"><span class="cur" id="cur-sym">₩</span><input type="number" id="amount" inputmode="decimal" placeholder="0" step="any" min="0" /></div></div>
+      <div class="field"><label for="amount">Amount</label><div class="amount-input"><span class="cur" id="cur-sym">₩</span><input type="text" id="amount" inputmode="decimal" placeholder="0" /></div></div>
       <div class="field"><label for="note">What for?</label><input type="text" id="note" placeholder="What was it for?" /></div>
       <div class="row2">
         <div class="field"><label for="category">Category</label><select id="category"></select></div>
@@ -456,7 +456,7 @@
           <button type="button" id="unit-l" aria-pressed="false">Liters</button>
         </div>
         <div class="row2">
-          <div class="amount-input"><span class="cur" id="fuel-cur">$</span><input type="number" id="fuel-price" inputmode="decimal" placeholder="Price per gallon" step="any" min="0" style="padding-left:32px"/></div>
+          <div class="amount-input"><span class="cur" id="fuel-cur">$</span><input type="text" id="fuel-price" inputmode="decimal" placeholder="Price per gallon" style="padding-left:32px"/></div>
           <input type="number" id="fuel-miles" inputmode="decimal" placeholder="Miles driven" step="any" min="0"/>
         </div>
         <div class="partial-hint" id="fuel-hint" style="color:var(--ink-soft);margin-top:7px"></div>
@@ -470,7 +470,7 @@
         </div>
         <div class="partial-row" id="partial-row">
           <label for="partial-nec" style="font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;display:block;">How much of it is necessary?</label>
-          <div class="amount-input"><span class="cur" id="cur-sym2">₩</span><input type="number" id="partial-nec" inputmode="decimal" placeholder="0" step="any" min="0" /></div>
+          <div class="amount-input"><span class="cur" id="cur-sym2">₩</span><input type="text" id="partial-nec" inputmode="decimal" placeholder="0" /></div>
           <div class="partial-hint" id="partial-hint">The rest counts as could-save.</div>
         </div>
         <button type="button" class="rec-link" id="btn-rec">✦ Not sure? Let AI recommend</button>
@@ -805,10 +805,14 @@ const TRANSLATIONS={
     bb_suggest_compare:"지난달과 비교해 주세요",
   }
 };
-const CAT_KO={"Rent / Housing":"주거/월세","Utilities":"공과금","Groceries":"식료품","Public transit":"대중교통","Fuel / Gas":"연료/주유","Car payment / upkeep":"자동차","Taxi / Rideshare":"택시/라이드","Phone / Internet":"통신비","Health":"의료/건강","Insurance":"보험","Dining out":"외식","Shopping":"쇼핑","Entertainment":"여가/오락","Subscriptions":"구독","Gifts":"선물","Other":"기타"};
+const CAT_KO={"Rent / Housing":"주거/월세","Utilities":"공과금","Groceries":"식료품","Public transit":"대중교통","Fuel / Gas":"연료/주유","Car payment / upkeep":"자동차","Taxi / Rideshare":"택시/라이드","Phone / Internet":"통신비","Health":"의료/건강","Insurance":"보험","Savings / 적금":"적금/저축","Investment / 주식":"투자/주식","Dining out":"외식","Shopping":"쇼핑","Entertainment":"여가/오락","Subscriptions":"구독","Gifts":"선물","Other":"기타"};
 let lang=localStorage.getItem("tn-lang")||"en";
 function tr(key,...args){const v=(TRANSLATIONS[lang]||TRANSLATIONS.en)[key]??TRANSLATIONS.en[key]??key;return typeof v==="function"?v(...args):v;}
 function catLabel(name){return lang==="ko"&&CAT_KO[name]?CAT_KO[name]:name;}
+/* ---------- number formatting helpers ---------- */
+function parseAmt(v){return parseFloat(String(v||"").replace(/,/g,""))||0;}
+function fmtInput(n){if(n===""||n==null||n===undefined)return "";const s=parseFloat(String(n).replace(/,/g,""));if(isNaN(s)||s===0&&n==="")return "";const p=String(s).split(".");return p[0].replace(/\B(?=(\d{3})+(?!\d))/g,",")+( p[1]?"."+p[1]:"");}
+function attachCommaFmt(el){if(!el)return;el.addEventListener("input",function(){const start=this.selectionStart;const oldVal=this.value;const raw=oldVal.replace(/,/g,"").replace(/[^\d.]/g,"").replace(/(\..*)\./g,"$1");if(!raw){this.value="";return;}const[int,dec]=raw.split(".");const fmtInt=(int||"").replace(/\B(?=(\d{3})+(?!\d))/g,",");const newVal=dec!==undefined?fmtInt+"."+dec:fmtInt;const charsB=oldVal.slice(0,start).replace(/,/g,"").length;this.value=newVal;let sig=0,cur=newVal.length;for(let i=0;i<newVal.length;i++){if(sig===charsB){cur=i;break;}if(newVal[i]!==",")sig++;}this.setSelectionRange(cur,cur);});}
 function setLang(l){lang=l;localStorage.setItem("tn-lang",l);document.cookie="tn-lang="+l+";path=/;max-age=31536000";document.documentElement.lang=l;applyI18n();render();openFullSettings(3);}
 function applyI18n(){
   const set=(id,key)=>{const el=document.getElementById(id);if(el)el.textContent=tr(key);};
@@ -895,6 +899,7 @@ const CATEGORIES=[
   {name:"Rent / Housing",necessary:true},{name:"Utilities",necessary:true},{name:"Groceries",necessary:true},
   {name:"Public transit",necessary:true},{name:"Fuel / Gas",necessary:true},{name:"Car payment / upkeep",necessary:true},{name:"Taxi / Rideshare",necessary:false},
   {name:"Phone / Internet",necessary:true},{name:"Health",necessary:true},{name:"Insurance",necessary:true},
+  {name:"Savings / 적금",necessary:true},{name:"Investment / 주식",necessary:false},
   {name:"Dining out",necessary:false},{name:"Shopping",necessary:false},{name:"Entertainment",necessary:false},
   {name:"Subscriptions",necessary:false},{name:"Gifts",necessary:false},{name:"Other",necessary:true}
 ];
@@ -1207,14 +1212,15 @@ function openIncomeForm(id){
   const iSrcPh=lang==="ko"?"어디서 왔나요?":"Where it came from";
   const iDateLbl=lang==="ko"?"받은 날짜":"Date received";
   openModal(`<h3>${iHdr}</h3>
-    <div class="field"><label for="i-amount">${iAmtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="i-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${e?e.amount:""}"/></div></div>
+    <div class="field"><label for="i-amount">${iAmtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="i-amount" inputmode="decimal" style="padding-left:32px;font-weight:600;" value="${e?fmtInput(e.amount):""}"/></div></div>
     <div class="field"><label for="i-note">${iSrcLbl}</label><input type="text" id="i-note" placeholder="${iSrcPh}" value="${e?esc(e.note||""):""}"/></div>
     <div class="field"><label for="i-date">${iDateLbl}</label><input type="date" id="i-date" value="${e?e.date:new Date().toISOString().slice(0,10)}"/></div>
     <div class="modal-actions"><button class="ghost" id="i-back">${tr("back")}</button><button class="primary" id="i-save">${e?tr("save"):tr("add_income")}</button></div>`);
+  attachCommaFmt(document.getElementById("i-amount"));
   setTimeout(()=>document.getElementById("i-amount").focus(),50);
   document.getElementById("i-back").onclick=()=>openIncomeList();
   document.getElementById("i-save").onclick=async()=>{
-    const amt=parseFloat(document.getElementById("i-amount").value);
+    const amt=parseAmt(document.getElementById("i-amount").value);
     if(!amt||amt<=0){toast(lang==="ko"?"금액을 입력하세요":"Enter an amount");return;}
     const date=document.getElementById("i-date").value||new Date().toISOString().slice(0,10);
     const note=document.getElementById("i-note").value.trim();
@@ -1321,17 +1327,19 @@ function openFuelEntryForm(){
   const dval=today.startsWith(def)?today:def+"-01";
   openModal(`<h3>${lang==="ko"?"주유 기록 추가":"Add fuel entry"}</h3>
     <div class="field"><label for="nf-date">${tr("date")}</label><input type="date" id="nf-date" value="${dval}"/></div>
-    <div class="field"><label for="nf-total">${lang==="ko"?"총 결제 금액":"Total paid"}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="nf-total" inputmode="decimal" step="any" min="0" style="padding-left:32px;font-weight:600" placeholder="0"/></div></div>
+    <div class="field"><label for="nf-total">${lang==="ko"?"총 결제 금액":"Total paid"}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="nf-total" inputmode="decimal" style="padding-left:32px;font-weight:600" placeholder="0"/></div></div>
     <div class="field"><label>${tr("fuel_details")}</label>
       <div class="toggle unit-toggle" style="grid-template-columns:1fr 1fr;margin-bottom:8px"><button type="button" id="nf-gal" aria-pressed="true">${tr("gallons")}</button><button type="button" id="nf-l" aria-pressed="false">${tr("liters")}</button></div>
-      <div class="row2"><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="nf-price" inputmode="decimal" step="any" min="0" style="padding-left:32px" placeholder="${tr("price_per_gallon")}"/></div><input type="number" id="nf-miles" inputmode="decimal" step="any" min="0" placeholder="${tr("miles_driven")}"/></div>
+      <div class="row2"><div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="nf-price" inputmode="decimal" style="padding-left:32px" placeholder="${tr("price_per_gallon")}"/></div><input type="number" id="nf-miles" inputmode="decimal" step="any" min="0" placeholder="${tr("miles_driven")}"/></div>
       <div class="partial-hint" id="nf-hint" style="color:var(--ink-soft);margin-top:7px"></div>
     </div>
     <div class="modal-actions"><button class="ghost" id="nf-back">${tr("back")}</button><button class="primary" id="nf-save">${lang==="ko"?"추가":"Add entry"}</button></div>`);
+  attachCommaFmt(document.getElementById("nf-total"));
+  attachCommaFmt(document.getElementById("nf-price"));
   const vl=()=>u==="gal"?"gal":"L",elb=()=>u==="gal"?"mpg":"km/L";
   const upd=()=>{
-    const total=parseFloat(document.getElementById("nf-total").value)||0;
-    const price=parseFloat(document.getElementById("nf-price").value)||0;
+    const total=parseAmt(document.getElementById("nf-total").value);
+    const price=parseAmt(document.getElementById("nf-price").value);
     const miles=parseFloat(document.getElementById("nf-miles").value)||0;
     const parts=[];if(price>0&&total>0){const v=total/price;parts.push(round1(v)+" "+vl());if(miles>0&&v>0)parts.push(round1(miles/v)+" "+elb());}
     document.getElementById("nf-hint").textContent=parts.length?("≈ "+parts.join(" · ")):"";
@@ -1342,10 +1350,10 @@ function openFuelEntryForm(){
   ["nf-total","nf-price","nf-miles"].forEach(id=>document.getElementById(id).addEventListener("input",upd));
   document.getElementById("nf-back").onclick=()=>drawFuelView();
   document.getElementById("nf-save").onclick=async()=>{
-    const total=parseFloat(document.getElementById("nf-total").value);
+    const total=parseAmt(document.getElementById("nf-total").value);
     if(!total||total<=0){toast(lang==="ko"?"총 결제 금액을 입력하세요":"Enter the total paid");return;}
     const date=document.getElementById("nf-date").value||new Date().toISOString().slice(0,10);
-    const price=parseFloat(document.getElementById("nf-price").value)||0;
+    const price=parseAmt(document.getElementById("nf-price").value);
     const miles=parseFloat(document.getElementById("nf-miles").value)||0;
     const entry={id:uid(),accountId:meta.currentAccountId,type:"expense",amount:total,note:lang==="ko"?"주유":"Fuel",category:"Fuel / Gas",date,necessary:true,partial:false,memo:"",hasPhoto:false,created:Date.now()};
     if(price>0||miles>0)entry.fuel={unit:u,price,distance:miles};
@@ -1606,8 +1614,7 @@ function openAccountEdit(id){
   const curOpts=Object.keys(CUR).map(k=>`<option value="${k}">${CUR[k].sym}  ${CUR_NAMES[k]} (${k})</option>`).join("");
   const curLbl=lang==="ko"?"통화":"Currency";
   const nameLbl=lang==="ko"?"계정 이름":"Account name";
-  const sdLbl=lang==="ko"?"예산 주기 시작일":"Budget cycle start day";
-  const sdDesc=lang==="ko"?"급여가 들어오는 날짜를 입력하세요. 예: 21일이면 21일~다음 달 20일이 한 달 예산 기간입니다. 기본값 1 = 매달 1일 시작":"Day your pay cycle starts (1–31). Example: 21 means the period runs the 21st – 20th of next month. Default 1 = regular calendar months.";
+  const sdDesc=lang==="ko"?"예: 21이면 21일~다음 달 20일이 한 달 기간. 기본값 1 = 일반 달력 월":"Example: 21 → period runs the 21st – 20th of next month. Default 1 = regular calendar months.";
   const lockLbl=(locked?tr("manage_lock"):tr("lock_account_hdr"))+" — "+esc(a.name);
   const lockIcon=locked?"🔒 ":"";
   const delLbl=lang==="ko"?"계정 삭제":"Delete account";
@@ -1618,7 +1625,7 @@ function openAccountEdit(id){
     `</div>`+
     `<div class="field"><label for="ae-name">${nameLbl}</label><input type="text" id="ae-name" value="${esc(a.name)}"/></div>`+
     `<div class="field"><label for="ae-cur">${curLbl}</label><select id="ae-cur">${curOpts}</select></div>`+
-    `<div class="field"><label for="ae-sd">${sdLbl}</label><input type="number" id="ae-sd" min="1" max="31" value="${a.salaryDay||1}" style="width:80px"/><div style="font-size:12px;color:var(--ink-soft);margin-top:4px">${sdDesc}</div></div>`+
+    `<div class="field"><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${lang==="ko"?"예산은 매월":"Budget starts on day"} <input type="number" id="ae-sd" min="1" max="31" value="${a.salaryDay||1}" style="width:58px;display:inline-block;margin:0"/> ${lang==="ko"?"일에 시작됩니다":"of each month"}</label><div style="font-size:12px;color:var(--ink-soft);margin-top:4px">${sdDesc}</div></div>`+
     `<button class="btn-secondary" id="ae-lock" style="width:100%;justify-content:center;margin-bottom:8px">${lockIcon}${lockLbl}</button>`+
     (meta.accounts.length>1?`<button class="btn-secondary" id="ae-del" style="width:100%;justify-content:center;border-color:var(--over-soft);background:var(--over-soft);color:var(--over-text);margin-bottom:0">${delLbl}</button>`:"")+
     `<button class="primary" id="ae-save" style="width:100%;margin-top:12px">${tr("save")}</button>`+
@@ -1689,8 +1696,8 @@ function setFuelUnit(u){
   updateFuelLabels();computeFuel();
 }
 function computeFuel(){
-  const total=parseFloat(document.getElementById("amount").value)||0;
-  const price=parseFloat(document.getElementById("fuel-price").value)||0;
+  const total=parseAmt(document.getElementById("amount").value);
+  const price=parseAmt(document.getElementById("fuel-price").value);
   const miles=parseFloat(document.getElementById("fuel-miles").value)||0;
   const parts=[];
   if(price>0&&total>0){const vol=total/price;parts.push(round1(vol)+" "+volLabel());
@@ -1707,13 +1714,13 @@ function fuelLine(e){
   return parts.join(" · ");
 }
 function updatePartialHint(){
-  const total=parseFloat(document.getElementById("amount").value)||0;
-  let necp=parseFloat(document.getElementById("partial-nec").value);
+  const total=parseAmt(document.getElementById("amount").value);
+  let necp=parseAmt(document.getElementById("partial-nec").value);
   if(isNaN(necp))necp=0;necp=Math.max(0,Math.min(necp,total));
   document.getElementById("partial-hint").textContent=tr("partial_hint",fmt(total-necp),fmt(total));
 }
 async function addEntry(){
-  const amount=parseFloat(document.getElementById("amount").value);
+  const amount=parseAmt(document.getElementById("amount").value);
   if(!amount||amount<=0){toast(tr("enter_amount"));document.getElementById("amount").focus();return;}
   const id=uid();
   const entry={id,accountId:meta.currentAccountId,type:"expense",amount,
@@ -1721,9 +1728,9 @@ async function addEntry(){
     category:document.getElementById("category").value,
     date:document.getElementById("date").value||new Date().toISOString().slice(0,10),
     memo:document.getElementById("memo").value.trim(),hasPhoto:!!pendingPhoto,created:Date.now()};
-  if(pendingMode==="partial"){entry.partial=true;entry.necAmount=Math.max(0,Math.min(parseFloat(document.getElementById("partial-nec").value)||0,amount));entry.necessary=true;}
+  if(pendingMode==="partial"){entry.partial=true;entry.necAmount=Math.max(0,Math.min(parseAmt(document.getElementById("partial-nec").value),amount));entry.necessary=true;}
   else{entry.partial=false;entry.necessary=pendingMode==="nec";}
-  if(entry.category==="Fuel / Gas"){const p=parseFloat(document.getElementById("fuel-price").value)||0;const mi=parseFloat(document.getElementById("fuel-miles").value)||0;if(p>0||mi>0)entry.fuel={unit:fuelUnit,price:p,distance:mi};}
+  if(entry.category==="Fuel / Gas"){const p=parseAmt(document.getElementById("fuel-price").value);const mi=parseFloat(document.getElementById("fuel-miles").value)||0;if(p>0||mi>0)entry.fuel={unit:fuelUnit,price:p,distance:mi};}
   entries.push(entry);
   if(pendingPhoto){try{await store.set(PKEY(id),pendingPhoto.base64,SHARED);}catch(e){entry.hasPhoto=false;}}
   await saveEntries();
@@ -1753,13 +1760,13 @@ function openEditEntry(id){
   const eFuelPPh=tr(fuelUnit==="gal"?"price_per_gallon":"price_per_liter");
   const eFuelMPh=tr(fuelUnit==="gal"?"miles_driven":"km_driven");
   openModal(`<h3>${lang==="ko"?"항목 수정":"Edit entry"}</h3>
-    <div class="field"><label for="e-amount">${tr("amount")}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${e.amount}"/></div></div>
+    <div class="field"><label for="e-amount">${tr("amount")}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="e-amount" inputmode="decimal" style="padding-left:32px;font-weight:600;" value="${fmtInput(e.amount)}"/></div></div>
     <div class="field"><label for="e-note">${tr("what_for")}</label><input type="text" id="e-note" value="${esc(e.note||"")}"/></div>
     <div class="row2"><div class="field"><label for="e-cat">${tr("category")}</label><select id="e-cat">${catOpts}</select></div><div class="field"><label for="e-date">${tr("date")}</label><input type="date" id="e-date" value="${e.date}"/></div></div>
     <div class="field" id="e-fuel-field" style="display:${e.category==='Fuel / Gas'?'block':'none'}">
       <label>${tr("fuel_details")}</label>
       <div class="toggle unit-toggle" style="grid-template-columns:1fr 1fr;margin-bottom:8px"><button type="button" id="e-unit-g">${tr("gallons")}</button><button type="button" id="e-unit-l">${tr("liters")}</button></div>
-      <div class="row2"><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-fuel-price" step="any" min="0" placeholder="${eFuelPPh}" style="padding-left:32px" value="${e.fuel?e.fuel.price:''}"/></div><input type="number" id="e-fuel-miles" step="any" min="0" placeholder="${eFuelMPh}" value="${e.fuel?(e.fuel.distance||''):''}"/></div>
+      <div class="row2"><div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="e-fuel-price" inputmode="decimal" placeholder="${eFuelPPh}" style="padding-left:32px" value="${e.fuel?fmtInput(e.fuel.price):''}"/></div><input type="number" id="e-fuel-miles" step="any" min="0" placeholder="${eFuelMPh}" value="${e.fuel?(e.fuel.distance||''):''}"/></div>
     </div>
     <div class="field"><label>${tr("how_count")}</label>
       <div class="toggle toggle-3">
@@ -1767,12 +1774,15 @@ function openEditEntry(id){
         <button type="button" class="t-opt" id="e-opt"><span class="d"></span>${tr("could_save")}</button>
         <button type="button" class="t-part" id="e-part"><span class="d"></span>${tr("partially")}</button>
       </div>
-      <div class="partial-row" id="e-partial-row"><label for="e-partial-nec" style="font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;display:block;">${tr("how_much_nec")}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="e-partial-nec" step="any" min="0" value="${e.partial?(e.necAmount||0):""}"/></div><div class="partial-hint" id="e-partial-hint"></div></div>
+      <div class="partial-row" id="e-partial-row"><label for="e-partial-nec" style="font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;display:block;">${tr("how_much_nec")}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="e-partial-nec" inputmode="decimal" value="${e.partial?fmtInput(e.necAmount||0):""}"/></div><div class="partial-hint" id="e-partial-hint"></div></div>
     </div>
     <div class="field"><label for="e-memo">${tr("memo_label")}</label><textarea id="e-memo">${esc(e.memo||"")}</textarea></div>
     <div class="field"><label>${tr("receipt_label")}</label><input type="file" id="e-file" accept="image/*" hidden /><div id="e-receipt"></div><div class="scan-status" id="e-scan-status"></div></div>
     <div class="modal-actions"><button class="ghost danger" id="e-del">${tr("del")}</button><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="e-save">${tr("save")}</button></div>`);
-  const eHint=()=>{const t=parseFloat(document.getElementById("e-amount").value)||0;let n=parseFloat(document.getElementById("e-partial-nec").value)||0;n=Math.max(0,Math.min(n,t));document.getElementById("e-partial-hint").textContent=tr("partial_hint",fmt(t-n),fmt(t));};
+  attachCommaFmt(document.getElementById("e-amount"));
+  attachCommaFmt(document.getElementById("e-fuel-price"));
+  attachCommaFmt(document.getElementById("e-partial-nec"));
+  const eHint=()=>{const t=parseAmt(document.getElementById("e-amount").value);let n=parseAmt(document.getElementById("e-partial-nec").value);n=Math.max(0,Math.min(n,t));document.getElementById("e-partial-hint").textContent=tr("partial_hint",fmt(t-n),fmt(t));};
   const setEM=m=>{mode=m;
     document.getElementById("e-nec").setAttribute("aria-pressed",m==="nec");
     document.getElementById("e-opt").setAttribute("aria-pressed",m==="opt");
@@ -1800,7 +1810,7 @@ function openEditEntry(id){
     try{
       const txt=await callClaude([{type:"image",source:{type:"base64",media_type:pendingEditPhoto.media,data:pendingEditPhoto.base64}},{type:"text",text:instr}]);
       const data=JSON.parse(txt.replace(/^```[^\n]*\n?|```$/gm,"").trim());
-      if(data.amount!=null)document.getElementById("e-amount").value=data.amount;
+      if(data.amount!=null)document.getElementById("e-amount").value=fmtInput(data.amount);
       if(data.merchant)document.getElementById("e-note").value=data.merchant;
       if(data.date&&/^\d{4}-\d{2}-\d{2}$/.test(data.date))document.getElementById("e-date").value=data.date;
       if(data.category){const sel=document.getElementById("e-cat");const o=[...sel.options].find(x=>x.value===data.category);if(o){sel.value=data.category;document.getElementById("e-fuel-field").style.display=data.category==="Fuel / Gas"?"block":"none";}}
@@ -1837,14 +1847,14 @@ function openEditEntry(id){
   };
   document.getElementById("e-del").onclick=async()=>{await delEntry(e.id);closeModal();};
   document.getElementById("e-save").onclick=async()=>{
-    const amt=parseFloat(document.getElementById("e-amount").value);
+    const amt=parseAmt(document.getElementById("e-amount").value);
     if(!amt||amt<=0){toast(lang==="ko"?"금액을 입력하세요":"Enter an amount");return;}
     e.amount=amt;e.note=document.getElementById("e-note").value.trim();
     e.category=document.getElementById("e-cat").value;e.date=document.getElementById("e-date").value||e.date;
     e.memo=document.getElementById("e-memo").value.trim();
-    if(mode==="partial"){e.partial=true;e.necAmount=Math.max(0,Math.min(parseFloat(document.getElementById("e-partial-nec").value)||0,amt));e.necessary=true;}
+    if(mode==="partial"){e.partial=true;e.necAmount=Math.max(0,Math.min(parseAmt(document.getElementById("e-partial-nec").value),amt));e.necessary=true;}
     else{e.partial=false;e.necessary=mode==="nec";delete e.necAmount;}
-    if(document.getElementById("e-cat").value==="Fuel / Gas"){const p=parseFloat(document.getElementById("e-fuel-price").value)||0;const mi=parseFloat(document.getElementById("e-fuel-miles").value)||0;if(p>0||mi>0)e.fuel={unit:efUnit,price:p,distance:mi};else delete e.fuel;}else delete e.fuel;
+    if(document.getElementById("e-cat").value==="Fuel / Gas"){const p=parseAmt(document.getElementById("e-fuel-price").value);const mi=parseFloat(document.getElementById("e-fuel-miles").value)||0;if(p>0||mi>0)e.fuel={unit:efUnit,price:p,distance:mi};else delete e.fuel;}else delete e.fuel;
     if(pendingEditPhoto){try{await store.set(PKEY(e.id),pendingEditPhoto.base64,SHARED);e.hasPhoto=true;}catch(err){}}
     else if(pendingEditPhoto===null){try{await store.delete(PKEY(e.id),SHARED);}catch(err){}e.hasPhoto=false;}
     await saveEntries();const em=e.date.slice(0,7);if(em!==currentMonth)currentMonth=em;
@@ -1888,7 +1898,7 @@ async function scanReceipt(){
   try{
     const txt=await callClaude([{type:"image",source:{type:"base64",media_type:pendingPhoto.media,data:pendingPhoto.base64}},{type:"text",text:instr}]);
     const data=JSON.parse(txt.replace(/^```[^\n]*\n?|```$/gm,"").trim());
-    if(data.amount!=null)document.getElementById("amount").value=data.amount;
+    if(data.amount!=null)document.getElementById("amount").value=fmtInput(data.amount);
     if(data.merchant)document.getElementById("note").value=data.merchant;
     if(data.date&&/^\d{4}-\d{2}-\d{2}$/.test(data.date))document.getElementById("date").value=data.date;
     if(data.category){const o=[...document.getElementById("category").options].find(x=>x.value===data.category);if(o)document.getElementById("category").value=data.category;}
@@ -2017,18 +2027,19 @@ function openRecurModal(id){
   const rEndLbl=lang==="ko"?"종료일 (선택사항)":"Ends on (optional)";
   openModal(`<h3>${rHdr}</h3><p>${rDesc}</p>
     <div class="field"><label for="r-name">${rNameLbl}</label><input type="text" id="r-name" placeholder="${rNamePh}" value="${t?esc(t.name):""}"/></div>
-    <div class="field"><label for="r-amount">${rAmtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="r-amount" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${t?t.amount:""}"/></div></div>
+    <div class="field"><label for="r-amount">${rAmtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="r-amount" inputmode="decimal" style="padding-left:32px;font-weight:600;" value="${t?fmtInput(t.amount):""}"/></div></div>
     <div class="row2"><div class="field"><label for="r-cat">${rCatLbl}</label><select id="r-cat">${catOpts}</select></div><div class="field"><label for="r-day">${rDayLbl}</label><input type="number" id="r-day" min="1" max="28" value="${t?(t.billingDay||1):1}"/></div></div>
     <div class="field"><label>${rNecLbl}</label><div class="toggle"><button type="button" class="t-nec" id="r-nec"><span class="d"></span>${tr("necessary")}</button><button type="button" class="t-opt" id="r-opt"><span class="d"></span>${tr("could_save")}</button></div></div>
     <div class="field"><label for="r-end">${rEndLbl}</label><input type="date" id="r-end" value="${t&&t.endDate?t.endDate:""}"/></div>
     <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="r-save">${t?tr("save"):tr("add")}</button></div>`);
+  attachCommaFmt(document.getElementById("r-amount"));
   const setRN=n=>{necc=n;document.getElementById("r-nec").setAttribute("aria-pressed",n?"true":"false");document.getElementById("r-opt").setAttribute("aria-pressed",n?"false":"true");};
   setRN(necc);
   document.getElementById("r-nec").onclick=()=>setRN(true);
   document.getElementById("r-opt").onclick=()=>setRN(false);
   document.getElementById("r-save").onclick=async()=>{
     const name=document.getElementById("r-name").value.trim();
-    const amount=parseFloat(document.getElementById("r-amount").value);
+    const amount=parseAmt(document.getElementById("r-amount").value);
     if(!name){toast(lang==="ko"?"이름을 입력하세요":"Give it a name");return;}
     if(!amount||amount<=0){toast(lang==="ko"?"금액을 입력하세요":"Enter the regular amount");return;}
     const data={name,amount,category:document.getElementById("r-cat").value,necessary:necc,
@@ -2055,10 +2066,11 @@ function openBudget(){
   const budHdr=lang==="ko"?`이번 달 예산 설정`:`Set this month's budget`;
   const budDesc=lang==="ko"?`${esc(acct().name)} 계정의 ${monthLabel(currentMonth)} 예산은 얼마인가요?`:`How much are you working with for ${esc(acct().name)} in ${monthLabel(currentMonth)}?`;
   openModal(`<h3>${budHdr}</h3><p>${budDesc}</p>
-    <div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="m-budget" inputmode="decimal" placeholder="0" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${meta.budgets[bkey()]||""}"/></div>
+    <div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="m-budget" inputmode="decimal" placeholder="0" style="padding-left:32px;font-weight:600;" value="${fmtInput(meta.budgets[bkey()]||"")}"/></div>
     <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="m-budget-save">${tr("save")}</button></div>`);
+  attachCommaFmt(document.getElementById("m-budget"));
   setTimeout(()=>document.getElementById("m-budget").focus(),50);
-  document.getElementById("m-budget-save").onclick=async()=>{const v=parseFloat(document.getElementById("m-budget").value);meta.budgets[bkey()]=(v&&v>0)?v:0;await saveMeta();closeModal();render();toast(lang==="ko"?"예산이 저장되었습니다":"Budget saved");};
+  document.getElementById("m-budget-save").onclick=async()=>{const v=parseAmt(document.getElementById("m-budget").value);meta.budgets[bkey()]=(v&&v>0)?v:0;await saveMeta();closeModal();render();toast(lang==="ko"?"예산이 저장되었습니다":"Budget saved");};
   document.getElementById("m-budget").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("m-budget-save").click();});
 }
 function openGoal(){
@@ -2069,12 +2081,13 @@ function openGoal(){
   const savTgtLbl=lang==="ko"?"저축 목표 (선택사항)":"Savings target (optional)";
   openModal(`<h3>${goalHdr}</h3><p>${goalDesc}</p>
     <div class="field"><label for="g-note">${goalLbl}</label><input type="text" id="g-note" placeholder="${goalPh}" value="${esc(g.note||"")}"/></div>
-    <div class="field"><label for="g-target">${savTgtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="number" id="g-target" inputmode="decimal" placeholder="0" step="any" min="0" style="padding-left:32px;font-weight:600;" value="${g.target||""}"/></div></div>
+    <div class="field"><label for="g-target">${savTgtLbl}</label><div class="amount-input"><span class="cur">${cur().sym}</span><input type="text" id="g-target" inputmode="decimal" placeholder="0" style="padding-left:32px;font-weight:600;" value="${fmtInput(g.target||"")}"/></div></div>
     <div class="modal-actions"><button class="ghost" onclick="closeModal()">${tr("cancel")}</button><button class="primary" id="g-save">${lang==="ko"?"목표 저장":"Save goal"}</button></div>`);
+  attachCommaFmt(document.getElementById("g-target"));
   setTimeout(()=>document.getElementById("g-note").focus(),50);
   document.getElementById("g-save").onclick=async()=>{
     if(!meta.goals)meta.goals={};
-    const note=document.getElementById("g-note").value.trim();const target=parseFloat(document.getElementById("g-target").value)||0;
+    const note=document.getElementById("g-note").value.trim();const target=parseAmt(document.getElementById("g-target").value);
     if(note||target>0)meta.goals[bkey()]={note,target};else delete meta.goals[bkey()];
     await saveMeta();closeModal();render();toast(lang==="ko"?"목표가 저장되었습니다":"Goal saved");
   };
@@ -2416,6 +2429,7 @@ function initStatic(){
   sel.innerHTML=CATEGORIES.map(c=>`<option value="${esc(c.name)}">${esc(catLabel(c.name))}</option>`).join("");
   sel.onchange=()=>{const def=CATEGORIES.find(c=>c.name===sel.value);if(def)setMode(def.necessary?"nec":"opt");toggleFuel(sel.value);};
   document.getElementById("date").value=new Date().toISOString().slice(0,10);
+  ["amount","fuel-price","partial-nec"].forEach(id=>attachCommaFmt(document.getElementById(id)));
 }
 async function init(){
   initStatic();
